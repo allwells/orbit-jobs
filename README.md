@@ -124,12 +124,4 @@ bun run build
 bun run typecheck
 ```
 
-## 📸 Phase 1 Preview
-
-- **Theme:** Electric Indigo primary, `#101010` background.
-- **Toggle:** Vercel-style System/Light/Dark mode.
-- **Mobile:** Fully responsive layout for on-the-go approvals.
-
----
-
-Developed for **@TheOrbitJobs**
+Developed for **[@OrbitJobs](https://x.com/OrbitJobs)**
