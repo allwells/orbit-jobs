@@ -81,8 +81,8 @@ BETTER_AUTH_SECRET=your_generated_secret_base64
 BETTER_AUTH_URL=http://localhost:3000
 
 # ── Admin Credentials (for seeding) ────
-ADMIN_USERNAME=orbitjobsadmin
-ADMIN_PASSWORD=OrbitJobs@1#
+ADMIN_USERNAME=your_username
+ADMIN_PASSWORD=your_password
 ```
 
 ### 2. Install Dependencies

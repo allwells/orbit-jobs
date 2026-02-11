@@ -94,6 +94,7 @@ async function seed() {
     // 2. Hash Password and Insert Admin
     const hashedPassword = await hashPassword(PASSWORD!);
     const userId = crypto.randomUUID();
+    const accountId = crypto.randomUUID();
 
     console.log(`👤 Seeding admin user: ${USERNAME}`);
 
@@ -106,8 +107,24 @@ async function seed() {
       [userId, "Admin", "admin@orbitjobs.local", hashedPassword, USERNAME],
     );
 
+    const actualUserId = result.rows[0].id;
+
+    // 3. Create credential account record (Better Auth looks here for passwords)
+    // Remove any existing credential account for this user, then insert fresh
+    await client.query(
+      `DELETE FROM account WHERE "userId" = $1 AND "providerId" = 'credential'`,
+      [actualUserId],
+    );
+    await client.query(
+      `INSERT INTO account (id, "userId", "accountId", "providerId", password)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [accountId, actualUserId, actualUserId, "credential", hashedPassword],
+    );
+
     if (result.rows.length > 0) {
-      console.log("✅ Admin user successfully seeded or updated.");
+      console.log(
+        "✅ Admin user and credential account successfully seeded or updated.",
+      );
     } else {
       console.log("ℹ️  Admin user already exists.");
     }
