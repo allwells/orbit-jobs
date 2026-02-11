@@ -237,8 +237,8 @@ export async function runScraper(
 
     // Log the scrape run
     await client.query(
-      `INSERT INTO log (id, type, message, metadata)
-       VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO log (id, type, message, metadata, created_at)
+       VALUES ($1, $2, $3, $4, $5)`,
       [
         crypto.randomUUID(),
         "scrape",
@@ -248,6 +248,7 @@ export async function runScraper(
           jobsFound: jobs.length,
           jobsInserted: inserted,
         }),
+        new Date().toISOString(),
       ],
     );
 
@@ -261,13 +262,14 @@ export async function runScraper(
     // Log the error
     try {
       await client.query(
-        `INSERT INTO log (id, type, message, metadata)
-         VALUES ($1, $2, $3, $4)`,
+        `INSERT INTO log (id, type, message, metadata, created_at)
+         VALUES ($1, $2, $3, $4, $5)`,
         [
           crypto.randomUUID(),
           "error",
           `Scraper failed: ${errorMessage}`,
           JSON.stringify({ keywords, error: errorMessage }),
+          new Date().toISOString(),
         ],
       );
     } catch {
