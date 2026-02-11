@@ -175,6 +175,14 @@ export default function SettingsPage() {
     return new Date(dateStr).toLocaleString();
   };
 
+  const calculateNextRun = () => {
+    if (!scraperStatus?.lastRun || !frequency) return null;
+    const lastRun = new Date(scraperStatus.lastRun.created_at);
+    const freqMinutes = parseInt(frequency);
+    const nextRun = new Date(lastRun.getTime() + freqMinutes * 60000);
+    return nextRun;
+  };
+
   if (loading) {
     return (
       <Stack gap="lg" align="center" justify="center" mih={400}>
@@ -330,15 +338,27 @@ export default function SettingsPage() {
               </Text>
             </Group>
             {scraperStatus.lastRun && (
-              <Group>
-                <Text size="sm" c="dimmed" w={120}>
-                  Last Run:
-                </Text>
-                <Text size="sm">
-                  {formatDate(scraperStatus.lastRun.created_at)} —{" "}
-                  {scraperStatus.lastRun.message}
-                </Text>
-              </Group>
+              <>
+                <Group>
+                  <Text size="sm" c="dimmed" w={120}>
+                    Last Run:
+                  </Text>
+                  <Text size="sm">
+                    {formatDate(scraperStatus.lastRun.created_at)} —{" "}
+                    {scraperStatus.lastRun.message}
+                  </Text>
+                </Group>
+                {calculateNextRun() && (
+                  <Group>
+                    <Text size="sm" c="dimmed" w={120}>
+                      Next Run:
+                    </Text>
+                    <Text size="sm" fw={600} c="teal">
+                      {formatDate(calculateNextRun()!.toISOString())}
+                    </Text>
+                  </Group>
+                )}
+              </>
             )}
             {scraperStatus.lastError && (
               <Group>
