@@ -69,7 +69,7 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
       <AppShell.Header className={styles.header}>
         <Group h="100%" px="md" wrap="nowrap" justify="space-between">
           {/* Left: Toggles */}
-          <Group>
+          <Group pl={desktopOpened ? 0 : "xs"}>
             <Burger
               opened={mobileOpened}
               onClick={toggleMobile}
@@ -193,7 +193,7 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
         </AppShell.Section>
 
         <AppShell.Section>
-          <Divider my="sm" />
+          {desktopOpened && <Divider my="sm" />}
 
           <Stack gap="sm" align="center">
             {/* Mobile-only utility menu */}
@@ -217,12 +217,12 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
               <Divider my="xs" />
             </Stack>
 
-            <Stack align="center" gap="sm">
-              <Group justify="center" mt="xs">
-                <ThemeToggle />
-              </Group>
+            {desktopOpened && (
+              <Stack align="center" gap="sm">
+                <Group justify="center" mt="xs">
+                  <ThemeToggle />
+                </Group>
 
-              {desktopOpened && (
                 <Text size="xs" c="dimmed" ta="center">
                   <a
                     href="https://x.com/TheOrbitJobs"
@@ -233,8 +233,8 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
                     @TheOrbitJobs
                   </a>
                 </Text>
-              )}
-            </Stack>
+              </Stack>
+            )}
           </Stack>
         </AppShell.Section>
       </AppShell.Navbar>
