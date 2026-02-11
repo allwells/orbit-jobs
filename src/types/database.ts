@@ -1,5 +1,10 @@
 /** Status of a job in the pipeline */
-export type JobStatus = "pending" | "approved" | "posted" | "rejected";
+export type JobStatus =
+  | "pending"
+  | "draft"
+  | "approved"
+  | "posted"
+  | "rejected";
 
 /** Work mode for a job listing */
 export type WorkMode = "remote" | "on-site" | "hybrid" | null;
@@ -17,8 +22,12 @@ export interface Job {
 
   /** AI-generated hook tweet (no link) */
   ai_hook: string | null;
-  /** AI-generated reply tweet (with link) */
+  /** AI-generated thread content (JSON/array) */
+  ai_thread: string[] | null;
+  /** AI-generated reply/link tweet */
   ai_reply: string | null;
+  /** AI analysis/notes */
+  ai_analysis: string | null;
 
   status: JobStatus;
   posted_at: string | null;

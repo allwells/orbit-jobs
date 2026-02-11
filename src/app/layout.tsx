@@ -14,7 +14,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "OrbitJobs — Command Center",
+  title: "Orbit Jobs",
   description:
     "Source high-paying tech jobs, polish them with AI, and publish viral-ready threads on X.",
 };

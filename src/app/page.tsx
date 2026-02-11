@@ -10,7 +10,6 @@ import {
   ThemeIcon,
   Badge,
   rem,
-  Loader,
 } from "@mantine/core";
 import { Briefcase, Zap, Send, TrendingUp } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -96,7 +95,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <Stack gap="lg">
+    <Stack gap="md">
       {/* ── Header ──────────────────────────────── */}
       <div>
         <Group gap="sm" align="center" mb={4}>
@@ -140,7 +139,7 @@ export default function DashboardPage() {
                 <stat.icon style={{ width: rem(18), height: rem(18) }} />
               </ThemeIcon>
             </Group>
-            <Text size="xl" fw={700}>
+            <Text fz={40} fw={700}>
               {stat.value}
             </Text>
             <Text size="xs" c="dimmed" mt={4}>
