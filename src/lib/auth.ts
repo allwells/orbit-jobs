@@ -1,5 +1,4 @@
 import { betterAuth } from "better-auth";
-import { pgAdapter } from "better-auth/adapters/pg";
 import { username } from "better-auth/plugins";
 import { Pool } from "pg";
 
@@ -8,11 +7,9 @@ import { Pool } from "pg";
  * Restricted to a single admin user through disabled sign-ups
  */
 export const auth = betterAuth({
-  database: pgAdapter(
-    new Pool({
-      connectionString: process.env.DATABASE_URL,
-    }),
-  ),
+  database: new Pool({
+    connectionString: process.env.DATABASE_URL,
+  }),
   emailAndPassword: {
     enabled: true,
     signUp: {
