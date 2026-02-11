@@ -28,13 +28,19 @@ import {
   Briefcase,
   MapPin,
   DollarSign,
-  Eye,
   Check,
   X,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Job } from "@/types/database";
 import { notifications } from "@mantine/notifications";
+
+interface QueueStats {
+  pendingJobs: number;
+  draftJobs: number;
+  approvedJobs: number;
+  rejectedJobs: number;
+}
 
 const ITEMS_PER_PAGE = 18;
 
@@ -46,6 +52,22 @@ export default function QueuePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [modalOpened, setModalOpened] = useState(false);
+  const [stats, setStats] = useState<QueueStats | null>(null);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await fetch("/api/dashboard/stats");
+      const data = await res.json();
+      setStats({
+        pendingJobs: data.pendingJobs,
+        draftJobs: data.draftJobs,
+        approvedJobs: data.approvedJobs,
+        rejectedJobs: data.rejectedJobs,
+      });
+    } catch (error) {
+      console.error("Failed to fetch stats:", error);
+    }
+  }, []);
 
   const fetchJobs = useCallback(async () => {
     if (!activeTab) return;
@@ -69,7 +91,8 @@ export default function QueuePage() {
 
   useEffect(() => {
     fetchJobs();
-  }, [fetchJobs]);
+    fetchStats();
+  }, [fetchJobs, fetchStats]);
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -89,6 +112,7 @@ export default function QueuePage() {
           icon: <Sparkles size={18} />,
         });
         setActiveTab("draft");
+        fetchStats();
       } else {
         notifications.show({
           title: "Processing Failed",
@@ -124,6 +148,7 @@ export default function QueuePage() {
         });
         setJobs((prev) => prev.filter((j) => j.id !== id));
         setModalOpened(false);
+        fetchStats();
       } else {
         throw new Error("Failed to update");
       }
@@ -164,15 +189,15 @@ export default function QueuePage() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="flex-start">
-        <div>
+      <Group justify="space-between" align="center">
+        <Stack gap={0}>
           <Title order={2} fw={700}>
             Job Queue
           </Title>
           <Text c="dimmed" size="sm">
             Review scraped jobs, generate AI drafts, and approve for posting.
           </Text>
-        </div>
+        </Stack>
 
         {activeTab === "pending" && (
           <Button
@@ -191,36 +216,53 @@ export default function QueuePage() {
       <Tabs
         value={activeTab}
         onChange={setActiveTab}
-        variant="pills"
+        variant="outline"
         radius="md"
       >
         <Tabs.List mb="md">
           <Tabs.Tab value="pending" leftSection={<ListTodo size={16} />}>
-            Pending
-            <Badge size="xs" circle ml={6} color="gray">
-              {jobs.length}
-            </Badge>
+            <Group gap="xs">
+              Pending
+              <Badge size="sm" circle color="gray">
+                {stats?.pendingJobs ?? 0}
+              </Badge>
+            </Group>
           </Tabs.Tab>
           <Tabs.Tab
             value="draft"
             leftSection={<Sparkles size={16} />}
             c="yellow.4"
           >
-            AI Drafts
+            <Group gap="xs">
+              AI Drafts
+              <Badge size="sm" circle color="yellow">
+                {stats?.draftJobs ?? 0}
+              </Badge>
+            </Group>
           </Tabs.Tab>
           <Tabs.Tab
             value="approved"
             leftSection={<CheckCircle2 size={16} />}
             c="teal.4"
           >
-            Approved
+            <Group gap="xs">
+              Approved
+              <Badge size="sm" circle color="teal">
+                {stats?.approvedJobs ?? 0}
+              </Badge>
+            </Group>
           </Tabs.Tab>
           <Tabs.Tab
             value="rejected"
             leftSection={<XCircle size={16} />}
             c="red.4"
           >
-            Rejected
+            <Group gap="xs">
+              Rejected
+              <Badge size="sm" circle color="red">
+                {stats?.rejectedJobs ?? 0}
+              </Badge>
+            </Group>
           </Tabs.Tab>
         </Tabs.List>
 
@@ -349,7 +391,7 @@ export default function QueuePage() {
                         <div style={{ flex: 1 }} />
 
                         {/* View Details Button */}
-                        <Button
+                        {/* <Button
                           variant="light"
                           fullWidth
                           size="xs"
@@ -360,7 +402,7 @@ export default function QueuePage() {
                           }}
                         >
                           View Details
-                        </Button>
+                        </Button> */}
                       </Stack>
                     </Card>
                   </Grid.Col>
