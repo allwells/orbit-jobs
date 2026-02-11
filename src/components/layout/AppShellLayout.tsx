@@ -12,6 +12,8 @@ import {
   UnstyledButton,
   Avatar,
   rem,
+  Tooltip,
+  Center,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
@@ -38,51 +40,70 @@ const navItems = [
 export function AppShellLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [opened, { toggle, close }] = useDisclosure();
+  const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] =
+    useDisclosure(false);
+  const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
 
   const handleNavigate = (href: string) => {
     router.push(href);
-    close();
+    closeMobile();
   };
 
   const handleLogout = async () => {
     await authClient.signOut();
     router.push("/login");
-    close();
+    closeMobile();
   };
 
   return (
     <AppShell
       header={{ height: 60 }}
       navbar={{
-        width: 260,
+        width: desktopOpened ? 260 : 80,
         breakpoint: "sm",
-        collapsed: { mobile: !opened },
+        collapsed: { mobile: !mobileOpened },
       }}
       padding="md"
     >
       {/* ── Header ────────────────────────────────── */}
       <AppShell.Header className={styles.header}>
-        <Group h="100%" px="md" justify="space-between">
-          <Group gap="sm">
+        <Group h="100%" px="md" wrap="nowrap" justify="space-between">
+          {/* Left: Toggles */}
+          <Group>
             <Burger
-              opened={opened}
-              onClick={toggle}
+              opened={mobileOpened}
+              onClick={toggleMobile}
               hiddenFrom="sm"
               size="sm"
             />
-            <Group
-              gap={8}
-              className={styles.logo}
+            <Burger
+              opened={desktopOpened}
+              onClick={toggleDesktop}
+              visibleFrom="sm"
+              size="sm"
+            />
+          </Group>
+
+          {/* Center: Logo (Absolute) */}
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex", // ensure height is handled if needed, or just standard div
+              alignItems: "center",
+            }}
+          >
+            <div
               onClick={() => handleNavigate("/")}
               style={{ cursor: "pointer" }}
             >
               <Logo size="h3" />
-            </Group>
-          </Group>
+            </div>
+          </div>
 
-          <Group visibleFrom="sm" gap="xs">
-            <ThemeToggle />
+          {/* Right: User Menu */}
+          <Group visibleFrom="sm">
             <Menu shadow="md" width={200} position="bottom-end">
               <Menu.Target>
                 <UnstyledButton>
@@ -101,7 +122,7 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
                         Admin
                       </Text>
                       <Text c="dimmed" size="xs">
-                        admin@orbitjobs.local
+                        orbitjobsadmin
                       </Text>
                     </div>
                     <ChevronDown size={14} />
@@ -142,15 +163,30 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
-                <NavLink
+                <Tooltip
                   key={item.href}
                   label={item.label}
-                  leftSection={<item.icon size={20} />}
-                  active={isActive}
-                  onClick={() => handleNavigate(item.href)}
-                  className={styles.navLink}
-                  variant="light"
-                />
+                  position="right"
+                  disabled={desktopOpened}
+                  withArrow
+                >
+                  <NavLink
+                    label={desktopOpened ? item.label : null}
+                    leftSection={<item.icon size={20} />}
+                    active={isActive}
+                    onClick={() => handleNavigate(item.href)}
+                    className={styles.navLink}
+                    variant="light"
+                    styles={{
+                      root: {
+                        justifyContent: desktopOpened ? "flex-start" : "center",
+                      },
+                      section: {
+                        marginRight: desktopOpened ? undefined : 0,
+                      },
+                    }}
+                  />
+                </Tooltip>
               );
             })}
           </Stack>
@@ -177,22 +213,28 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
                 c="red"
                 variant="light"
               />
-              <Group justify="center" mt="xs">
-                <ThemeToggle />
-              </Group>
+
               <Divider my="xs" />
             </Stack>
 
-            <Text size="xs" c="dimmed" ta="center">
-              <a
-                href="https://x.com/TheOrbitJobs"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: "var(--mantine-color-dimmed)" }}
-              >
-                @TheOrbitJobs
-              </a>
-            </Text>
+            <Stack align="center" gap="sm">
+              <Group justify="center" mt="xs">
+                <ThemeToggle />
+              </Group>
+
+              {desktopOpened && (
+                <Text size="xs" c="dimmed" ta="center">
+                  <a
+                    href="https://x.com/TheOrbitJobs"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "var(--mantine-color-dimmed)" }}
+                  >
+                    @TheOrbitJobs
+                  </a>
+                </Text>
+              )}
+            </Stack>
           </Stack>
         </AppShell.Section>
       </AppShell.Navbar>
