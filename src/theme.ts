@@ -33,7 +33,7 @@ const dark: MantineColorsTuple = [
   "#25262B", // 6 - card/surface
   "#1A1B1E", // 7 - elevated surface
   "#141414", // 8 - secondary background
-  "#101010", // 9 - body background (#101010)
+  "#050505", // 9 - body background (#050505)
 ];
 
 const themeOverride = createTheme({

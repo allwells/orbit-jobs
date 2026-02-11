@@ -8,7 +8,10 @@ import {
   Text,
   Stack,
   Divider,
-  Box,
+  Menu,
+  UnstyledButton,
+  Avatar,
+  rem,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
@@ -16,19 +19,20 @@ import {
   ListTodo,
   Settings,
   BarChart3,
-  Orbit,
   LogOut,
+  User,
+  ChevronDown,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "../ThemeToggle";
+import { Logo } from "../Logo";
 import styles from "./AppShellLayout.module.css";
 
 const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Job Queue", href: "/queue", icon: ListTodo },
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
-  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function AppShellLayout({ children }: { children: React.ReactNode }) {
@@ -73,21 +77,61 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
               onClick={() => handleNavigate("/")}
               style={{ cursor: "pointer" }}
             >
-              <Orbit size={28} className={styles.logoIcon} />
-              <Text
-                size="lg"
-                fw={700}
-                variant="gradient"
-                gradient={{ from: "indigo", to: "violet", deg: 135 }}
-              >
-                OrbitJobs
-              </Text>
+              <Logo size="h3" />
             </Group>
           </Group>
 
-          <Box visibleFrom="sm">
+          <Group visibleFrom="sm" gap="xs">
             <ThemeToggle />
-          </Box>
+            <Menu shadow="md" width={200} position="bottom-end">
+              <Menu.Target>
+                <UnstyledButton>
+                  <Group gap={8}>
+                    <Avatar
+                      src={null}
+                      alt="Admin"
+                      radius="xl"
+                      size={36}
+                      color="indigo"
+                    >
+                      <User size="1.2rem" />
+                    </Avatar>
+                    <div style={{ flex: 1 }}>
+                      <Text size="sm" fw={500}>
+                        Admin
+                      </Text>
+                      <Text c="dimmed" size="xs">
+                        admin@orbitjobs.local
+                      </Text>
+                    </div>
+                    <ChevronDown size={14} />
+                  </Group>
+                </UnstyledButton>
+              </Menu.Target>
+
+              <Menu.Dropdown>
+                <Menu.Label>Account</Menu.Label>
+                <Menu.Item
+                  leftSection={
+                    <Settings style={{ width: rem(14), height: rem(14) }} />
+                  }
+                  onClick={() => handleNavigate("/settings")}
+                >
+                  Settings
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  color="red"
+                  leftSection={
+                    <LogOut style={{ width: rem(14), height: rem(14) }} />
+                  }
+                  onClick={handleLogout}
+                >
+                  Logout
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
         </Group>
       </AppShell.Header>
 
@@ -109,24 +153,45 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
                 />
               );
             })}
-            <NavLink
-              label="Logout"
-              leftSection={<LogOut size={20} />}
-              onClick={handleLogout}
-              className={styles.navLink}
-              c="red"
-            />
           </Stack>
         </AppShell.Section>
 
         <AppShell.Section>
           <Divider my="sm" />
-          <Stack gap="xs" align="center">
-            <Box hiddenFrom="sm">
-              <ThemeToggle />
-            </Box>
+
+          <Stack gap="sm" align="center">
+            {/* Mobile-only utility menu */}
+            <Stack gap="xs" hiddenFrom="sm" w="100%">
+              <NavLink
+                label="Settings"
+                leftSection={<Settings size={20} />}
+                onClick={() => handleNavigate("/settings")}
+                className={styles.navLink}
+                variant="light"
+              />
+              <NavLink
+                label="Logout"
+                leftSection={<LogOut size={20} />}
+                onClick={handleLogout}
+                className={styles.navLink}
+                c="red"
+                variant="light"
+              />
+              <Group justify="center" mt="xs">
+                <ThemeToggle />
+              </Group>
+              <Divider my="xs" />
+            </Stack>
+
             <Text size="xs" c="dimmed" ta="center">
-              @TheOrbitJobs
+              <a
+                href="https://x.com/TheOrbitJobs"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "var(--mantine-color-dimmed)" }}
+              >
+                @TheOrbitJobs
+              </a>
             </Text>
           </Stack>
         </AppShell.Section>

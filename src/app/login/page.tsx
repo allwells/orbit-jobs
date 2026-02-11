@@ -12,8 +12,10 @@ import {
   rem,
 } from "@mantine/core";
 import { useState } from "react";
-import { Lock, User, AlertCircle } from "lucide-react";
+import { Lock, User, AlertCircle, Check } from "lucide-react";
+import { notifications } from "@mantine/notifications";
 import { authClient } from "@/lib/auth-client";
+import { Logo } from "@/components/Logo";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -34,9 +36,18 @@ export default function LoginPage() {
         },
         {
           onSuccess: () => {
-            // Force a hard navigation to ensure session cookies are properly
-            // recognized by the server middleware and to clear client state.
-            window.location.href = "/";
+            notifications.show({
+              title: "Access Granted",
+              message: "Redirecting to Command Center...",
+              color: "teal",
+              icon: <Check style={{ width: rem(18), height: rem(18) }} />,
+              autoClose: 2000,
+            });
+
+            // Force a hard navigation after a brief delay ensuring notification is seen
+            setTimeout(() => {
+              window.location.href = "/";
+            }, 800);
           },
           onError: (ctx) => {
             setError(
@@ -66,15 +77,7 @@ export default function LoginPage() {
     >
       <Container size={520} my={40}>
         <Stack gap={4} align="center" mb={24}>
-          <Text
-            fw={900}
-            fz="h2"
-            variant="gradient"
-            gradient={{ from: "#6366F1", to: "#4F46E5", deg: 135 }}
-            style={{ letterSpacing: "-0.5px" }}
-          >
-            OrbitJobs
-          </Text>
+          <Logo />
         </Stack>
 
         <form onSubmit={handleLogin}>
