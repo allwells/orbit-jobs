@@ -70,7 +70,7 @@ export default function LoginPage() {
             fw={900}
             fz="h2"
             variant="gradient"
-            gradient={{ from: "indigo", to: "violet", deg: 135 }}
+            gradient={{ from: "#6366F1", to: "#4F46E5", deg: 135 }}
             style={{ letterSpacing: "-0.5px" }}
           >
             OrbitJobs
