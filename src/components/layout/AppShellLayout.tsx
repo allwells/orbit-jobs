@@ -64,6 +64,7 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
         collapsed: { mobile: !mobileOpened },
       }}
       padding="md"
+      pb="xl"
     >
       {/* ── Header ────────────────────────────────── */}
       <AppShell.Header className={styles.header}>

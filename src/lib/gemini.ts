@@ -19,7 +19,7 @@ export interface AIContent {
  */
 export async function generateJobContent(
   job: Job,
-  modelName: string = "gemini-2.0-flash-exp",
+  modelName: string = "gemini-2.0-flash",
 ): Promise<AIContent> {
   try {
     const prompt = `You are an expert tech recruiter and viral social media strategist specializing in Developer Relations and Engineering roles.
