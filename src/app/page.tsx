@@ -30,7 +30,7 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [greeting, setGreeting] = useState("Command Center");
+  const [greeting, setGreeting] = useState("");
 
   useEffect(() => {
     const hour = new Date().getHours();
