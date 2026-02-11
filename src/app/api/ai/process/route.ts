@@ -29,6 +29,15 @@ export async function POST(req: Request) {
         jobs = result.rows;
       }
 
+      // Fetch AI model setting
+      const settingsResult = await client.query(
+        "SELECT value FROM setting WHERE key = 'gemini_model'",
+      );
+      const modelName =
+        settingsResult.rows.length > 0
+          ? settingsResult.rows[0].value
+          : "gemini-2.0-flash-exp";
+
       const results = {
         processed: 0,
         failed: 0,
@@ -46,7 +55,7 @@ export async function POST(req: Request) {
           }
 
           // Generate AI content
-          const content = await generateJobContent(job);
+          const content = await generateJobContent(job, modelName);
 
           // Update DB - mark status as 'draft'
           await client.query(
@@ -95,11 +104,24 @@ export async function POST(req: Request) {
               JSON.stringify({ jobId: job.id, error: err.message }),
             ],
           );
+
+          // CRITICAL: Stop processing if we hit a hard failure (like Rate Limit or Auth)
+          // or if the user requested to cancel on failure.
+          // For now, we break on 429 (Rate Limit) or 401/403 (Auth) or 404 (Model not found)
+          const msg = err.message || "";
+          if (
+            msg.includes("Rate limit") ||
+            msg.includes("API Key") ||
+            msg.includes("Model Not Found")
+          ) {
+            console.warn("Stopping batch processing due to critical AI error");
+            break;
+          }
         }
       }
 
       return NextResponse.json({
-        success: true,
+        success: results.processed > 0,
         message: `Processed ${results.processed} jobs. Failed: ${results.failed}`,
         details: results,
       });

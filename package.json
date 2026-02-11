@@ -10,13 +10,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
+    "@google/genai": "^1.40.0",
     "@mantine/core": "^8.3.14",
     "@mantine/hooks": "^8.3.14",
     "@mantine/notifications": "^8.3.14",
     "@supabase/supabase-js": "^2.95.3",
     "better-auth": "^1.4.18",
     "chart.js": "^4.5.1",
+    "dayjs": "^1.11.19",
     "dotenv": "^17.2.4",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",

@@ -1,8 +1,10 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { Job } from "@/types/database";
 
 // Initialize Gemini AI client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+// The client automatically picks up GEMINI_API_KEY from environment
+// but we can pass it explicitly if needed
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export interface AIContent {
   hook: string;
@@ -13,16 +15,13 @@ export interface AIContent {
 
 /**
  * Generates viral X (Twitter) content for a tech job using Gemini.
- * Uses gemini-2.0-flash-exp for fast, reliable generation.
+ * Allows specifying a model, defaults to 'gemini-2.0-flash-exp'.
  */
-export async function generateJobContent(job: Job): Promise<AIContent> {
+export async function generateJobContent(
+  job: Job,
+  modelName: string = "gemini-2.0-flash-exp",
+): Promise<AIContent> {
   try {
-    // Use gemini-2.0-flash-exp which is available in v1 endpoint
-    // This is faster and more cost-effective than 1.5-pro
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp",
-    });
-
     const prompt = `You are an expert tech recruiter and viral social media strategist specializing in Developer Relations and Engineering roles.
 
 Your task: Transform this job posting into a high-engagement Twitter/X thread that developers will actually want to read.
@@ -53,15 +52,27 @@ Guidelines:
 
 Remember: Do NOT include the URL in hook or thread. Only in the reply tweet.`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    let text = response.text();
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }],
+        },
+      ],
+      config: {
+        responseMimeType: "application/json",
+      },
+    });
+
+    let text = response.text || "";
 
     if (!text) {
       throw new Error("Empty response from AI");
     }
 
     // Clean up response - remove markdown code blocks if present
+    // Even though we requested JSON, some models/proxies might wrap it
     text = text
       .replace(/```json\s*/g, "")
       .replace(/```\s*/g, "")
@@ -114,7 +125,7 @@ Remember: Do NOT include the URL in hook or thread. Only in the reply tweet.`;
     // Provide helpful error messages
     if (errorMessage.includes("404")) {
       throw new Error(
-        "Gemini Model Not Found. The model may not be available in your region or with your API key.",
+        `Gemini Model '${modelName}' Not Found. Check availability in your region.`,
       );
     }
 

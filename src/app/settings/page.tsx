@@ -25,6 +25,10 @@ import {
   Info,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import dayjs from "dayjs";
+import advancedFormat from "dayjs/plugin/advancedFormat";
+
+dayjs.extend(advancedFormat);
 
 const FREQUENCY_OPTIONS = [
   { value: "15", label: "Every 15 minutes" },
@@ -34,6 +38,18 @@ const FREQUENCY_OPTIONS = [
   { value: "360", label: "Every 6 hours" },
   { value: "720", label: "Every 12 hours" },
   { value: "1440", label: "Every 24 hours" },
+];
+
+const GEMINI_MODELS = [
+  { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash (Recommended)" },
+  { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
+  { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
+  { value: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash Lite" },
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite" },
+  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+  { value: "gemini-3-flash-preview", label: "Gemini 3 Flash Preview" },
+  { value: "gemini-3-pro-preview", label: "Gemini 3 Pro Preview" },
 ];
 
 interface ScraperStatus {
@@ -53,6 +69,7 @@ interface ScraperStatus {
 export default function SettingsPage() {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [frequency, setFrequency] = useState<string | null>("60");
+  const [model, setModel] = useState<string | null>("gemini-2.0-flash-exp");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [scraping, setScraping] = useState(false);
@@ -83,6 +100,9 @@ export default function SettingsPage() {
       }
       if (settings.scraper_frequency) {
         setFrequency(settings.scraper_frequency);
+      }
+      if (settings.gemini_model) {
+        setModel(settings.gemini_model);
       }
       setScraperStatus(status);
     } catch (error) {
@@ -137,6 +157,27 @@ export default function SettingsPage() {
     }
   };
 
+  // Save model
+  const saveModel = async (value: string | null) => {
+    if (!value) return;
+    setModel(value);
+    setSaving(true);
+    try {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: "gemini_model",
+          value,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to save model:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Trigger manual scrape
   const runScraper = async () => {
     setScraping(true);
@@ -171,15 +212,23 @@ export default function SettingsPage() {
     }
   };
 
+  const isToday = (dateStr: string) => {
+    return dayjs(dateStr).isSame(dayjs(), "day");
+  };
+
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString();
+    if (isToday(dateStr)) {
+      return `Today @ ${dayjs(dateStr).format("h:mm A")}`;
+    }
+
+    return dayjs(dateStr).format("Do MMMM, YYYY @ h:mm A");
   };
 
   const calculateNextRun = () => {
     if (!scraperStatus?.lastRun || !frequency) return null;
-    const lastRun = new Date(scraperStatus.lastRun.created_at);
+    const lastRun = dayjs(scraperStatus.lastRun.created_at);
     const freqMinutes = parseInt(frequency);
-    const nextRun = new Date(lastRun.getTime() + freqMinutes * 60000);
+    const nextRun = lastRun.add(freqMinutes, "minute");
     return nextRun;
   };
 
@@ -239,6 +288,27 @@ export default function SettingsPage() {
         <Text c="dimmed" size="xs" mt="xs">
           {keywords.length} keyword{keywords.length !== 1 ? "s" : ""} configured
         </Text>
+      </Paper>
+
+      {/* ── AI Model Configuration ───────────────── */}
+      <Paper p="lg" radius="md" withBorder>
+        <Group gap="sm" mb="md">
+          <Settings
+            size={20}
+            style={{ color: "var(--mantine-color-grape-6)" }}
+          />
+          <Text fw={600}>AI Brain Model</Text>
+        </Group>
+        <Text c="dimmed" size="sm" mb="md">
+          Select the Gemini model used for generating viral job tweets.
+        </Text>
+        <Select
+          data={GEMINI_MODELS}
+          value={model}
+          onChange={saveModel}
+          allowDeselect={false}
+          w={300}
+        />
       </Paper>
 
       {/* ── Scraping Frequency ───────────────────── */}
