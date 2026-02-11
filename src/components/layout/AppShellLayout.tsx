@@ -17,8 +17,10 @@ import {
   Settings,
   BarChart3,
   Orbit,
+  LogOut,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "../ThemeToggle";
 import styles from "./AppShellLayout.module.css";
 
@@ -36,6 +38,12 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
 
   const handleNavigate = (href: string) => {
     router.push(href);
+    close();
+  };
+
+  const handleLogout = async () => {
+    await authClient.signOut();
+    router.push("/login");
     close();
   };
 
@@ -101,6 +109,13 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
                 />
               );
             })}
+            <NavLink
+              label="Logout"
+              leftSection={<LogOut size={20} />}
+              onClick={handleLogout}
+              className={styles.navLink}
+              c="red"
+            />
           </Stack>
         </AppShell.Section>
 

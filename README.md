@@ -66,10 +66,54 @@ OrbitJobs removes the heavy lifting of sourcing and writing while maintaining th
 
 ## 📦 Getting Started
 
-```bash
-# Install dependencies
-bun install
+### 1. Environment Configuration
 
+Create a `.env.local` file in the root directory and add the following:
+
+```env
+# ── Supabase ──────────────────────────────────────
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+DATABASE_URL=postgresql://postgres.project:password@aws-0-region.pooler.supabase.com:5432/postgres
+
+# ── Better Auth ────────────────────────
+BETTER_AUTH_SECRET=your_generated_secret_base64
+BETTER_AUTH_URL=http://localhost:3000
+
+# ── Admin Credentials (for seeding) ────
+ADMIN_USERNAME=orbitjobsadmin
+ADMIN_PASSWORD=OrbitJobs@1#
+```
+
+### 2. Install Dependencies
+
+```bash
+bun install
+```
+
+### 3. Initialize Database & Admin User
+
+Run the seed script to create the database schema and the initial admin user.
+
+```bash
+bun run scripts/seed-admin.ts
+```
+
+### 4. Run Development Server
+
+```bash
+bun run dev
+```
+
+### 5. Access Command Center
+
+Visit `http://localhost:3000/login` and sign in with your configured admin credentials.
+
+---
+
+## 🛠️ Commands
+
+```bash
 # Run development server
 bun run dev
 
