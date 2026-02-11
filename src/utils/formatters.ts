@@ -1,21 +1,29 @@
-import dayjs from "dayjs";
-import advancedFormat from "dayjs/plugin/advancedFormat";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
 import { isToday } from "./validators";
 
-dayjs.extend(advancedFormat);
-dayjs.extend(utc);
-dayjs.extend(timezone);
+function getOrdinal(n: number) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
 
 export const formatDate = (dateStr: string) => {
-  // Ensure we parse as UTC if the string is ambiguous, or handle ISO string correctly
-  // .local() coverts it to the user's browser timezone
-  const date = dayjs.utc(dateStr).local();
+  // Create date object (uses local system timezone)
+  const date = new Date(dateStr);
+
+  const day = date.getDate();
+  const month = date.toLocaleString("en-US", { month: "long" });
+  const year = date.getFullYear();
+
+  // Format time (e.g., 5:30 PM)
+  const time = date.toLocaleString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 
   if (isToday(dateStr)) {
-    return `Today @ ${date.format("h:mm A")}`;
+    return `Today @ ${time}`;
   }
 
-  return date.format("Do MMM, YYYY @ h:mm A");
+  return `${getOrdinal(day)} ${month}, ${year} @ ${time}`;
 };

@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { formatDate } from "@/utils/formatters";
-import dayjs from "dayjs";
 
 const FREQUENCY_OPTIONS = [
   { value: "15", label: "Every 15 minutes" },
@@ -212,9 +211,9 @@ export default function SettingsPage() {
 
   const calculateNextRun = () => {
     if (!scraperStatus?.lastRun || !frequency) return null;
-    const lastRun = dayjs(scraperStatus.lastRun.created_at);
+    const lastRun = new Date(scraperStatus.lastRun.created_at);
     const freqMinutes = parseInt(frequency);
-    const nextRun = lastRun.add(freqMinutes, "minute");
+    const nextRun = new Date(lastRun.getTime() + freqMinutes * 60000);
     return nextRun;
   };
 
