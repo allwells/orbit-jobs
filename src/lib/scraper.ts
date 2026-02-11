@@ -105,7 +105,10 @@ async function humanScroll(page: Page): Promise<void> {
 
 // ── Core scraping logic ──────────────────────────────
 
-async function scrapeJobCards(page: Page): Promise<ScrapedJob[]> {
+async function scrapeJobCards(
+  page: Page,
+  limit: number,
+): Promise<ScrapedJob[]> {
   const jobs: ScrapedJob[] = [];
 
   // Wait for job list to appear
@@ -113,9 +116,18 @@ async function scrapeJobCards(page: Page): Promise<ScrapedJob[]> {
     timeout: 15000,
   });
 
-  // Scroll a few times to load more cards
-  for (let i = 0; i < 3; i++) {
+  // Scroll to load enough cards
+  let scrollAttempts = 0;
+  const maxScrolls = Math.max(3, Math.ceil(limit / 10)); // Heuristic: approx 10 jobs per scroll
+
+  while (scrollAttempts < maxScrolls) {
+    const cardCount = await page
+      .locator("ul.jobs-search__results-list > li")
+      .count();
+    if (cardCount >= limit) break;
+
     await humanScroll(page);
+    scrollAttempts++;
   }
 
   await jitter(1000, 2000);
@@ -173,7 +185,7 @@ async function scrapeJobCards(page: Page): Promise<ScrapedJob[]> {
     }
   }
 
-  return jobs;
+  return jobs.slice(0, limit);
 }
 
 // ── Public API ───────────────────────────────────────
@@ -188,6 +200,7 @@ export interface ScrapeResult {
 export async function runScraper(
   keywords: string[],
   databaseUrl: string,
+  limit: number = 20,
 ): Promise<ScrapeResult> {
   let browser: Browser | null = null;
   const client = new Client({ connectionString: databaseUrl });
@@ -206,7 +219,7 @@ export async function runScraper(
     await jitter(2000, 4000);
 
     // Scrape job cards
-    const jobs = await scrapeJobCards(page);
+    const jobs = await scrapeJobCards(page, limit);
     console.log(`📋 Found ${jobs.length} job cards`);
 
     // Insert into database (deduplicate by linkedin_job_id)

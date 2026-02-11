@@ -37,6 +37,8 @@ const FREQUENCY_OPTIONS = [
   { value: "1440", label: "Every 24 hours" },
 ];
 
+const LIMIT_OPTIONS = ["5", "10", "20", "40", "50", "70", "100"];
+
 const GEMINI_MODELS = [
   { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash (Recommended)" },
   { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
@@ -66,6 +68,7 @@ interface ScraperStatus {
 export default function SettingsPage() {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [frequency, setFrequency] = useState<string | null>("60");
+  const [limit, setLimit] = useState<string | null>("20");
   const [model, setModel] = useState<string | null>("gemini-2.0-flash-exp");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -97,6 +100,9 @@ export default function SettingsPage() {
       }
       if (settings.scraper_frequency) {
         setFrequency(settings.scraper_frequency);
+      }
+      if (settings.scraper_limit) {
+        setLimit(settings.scraper_limit);
       }
       if (settings.gemini_model) {
         setModel(settings.gemini_model);
@@ -149,6 +155,27 @@ export default function SettingsPage() {
       });
     } catch (error) {
       console.error("Failed to save frequency:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Save limit
+  const saveLimit = async (value: string | null) => {
+    if (!value) return;
+    setLimit(value);
+    setSaving(true);
+    try {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: "scraper_limit",
+          value,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to save limit:", error);
     } finally {
       setSaving(false);
     }
@@ -314,6 +341,27 @@ export default function SettingsPage() {
         />
       </Paper>
 
+      {/* ── Scraping Limit ───────────────────────── */}
+      <Paper p="lg" radius="md" withBorder>
+        <Group gap="sm" mb="md">
+          <Settings
+            size={20}
+            style={{ color: "var(--mantine-color-orange-6)" }}
+          />
+          <Text fw={600}>Scraping Job Limit</Text>
+        </Group>
+        <Text c="dimmed" size="sm" mb="md">
+          Maximum number of jobs to scrape per run (up to 100).
+        </Text>
+        <Select
+          data={LIMIT_OPTIONS}
+          value={limit}
+          onChange={saveLimit}
+          allowDeselect={false}
+          w={300}
+        />
+      </Paper>
+
       {/* ── Manual Scrape ────────────────────────── */}
       <Paper p="lg" radius="md" withBorder>
         <Group gap="sm" mb="md">
@@ -394,21 +442,25 @@ export default function SettingsPage() {
             </Group>
             {scraperStatus.lastRun && (
               <>
-                <Group>
-                  <Text size="sm" c="dimmed" w={120}>
+                <Group align="start" style={{ flexWrap: "nowrap" }}>
+                  <Text size="sm" c="dimmed" w={120} style={{ flexShrink: 0 }}>
                     Last Run:
                   </Text>
-                  <Text size="sm">
-                    {formatDate(scraperStatus.lastRun.created_at)} —{" "}
+                  <Text size="sm" style={{ wordBreak: "break-word" }}>
+                    {formatDate(scraperStatus.lastRun.created_at)} |{" "}
                     {scraperStatus.lastRun.message}
                   </Text>
                 </Group>
                 {calculateNextRun() && (
-                  <Group>
+                  <Group align="start" style={{ flexWrap: "nowrap" }}>
                     <Text size="sm" c="dimmed" w={120}>
                       Next Run:
                     </Text>
-                    <Text size="sm" fw={600} c="teal">
+                    <Text
+                      size="sm"
+                      fw={600}
+                      style={{ wordBreak: "break-word" }}
+                    >
                       {formatDate(calculateNextRun()!.toISOString())}
                     </Text>
                   </Group>
@@ -416,12 +468,12 @@ export default function SettingsPage() {
               </>
             )}
             {scraperStatus.lastError && (
-              <Group>
-                <Text size="sm" c="dimmed" w={120}>
+              <Group align="start" style={{ flexWrap: "nowrap" }}>
+                <Text size="sm" c="dimmed" w={120} style={{ flexShrink: 0 }}>
                   Last Error:
                 </Text>
-                <Text size="sm" c="red">
-                  {formatDate(scraperStatus.lastError.created_at)} —{" "}
+                <Text size="sm" c="red" style={{ wordBreak: "break-word" }}>
+                  {formatDate(scraperStatus.lastError.created_at)} |{" "}
                   {scraperStatus.lastError.message}
                 </Text>
               </Group>

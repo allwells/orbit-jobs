@@ -18,23 +18,29 @@ export async function POST() {
   try {
     await client.connect();
     const result = await client.query(
-      "SELECT value FROM setting WHERE key = $1",
-      ["scraper_keywords"],
+      "SELECT key, value FROM setting WHERE key IN ($1, $2)",
+      ["scraper_keywords", "scraper_limit"],
     );
 
     let keywords: string[] = ["Frontend", "React"];
-    if (result.rows.length > 0) {
-      try {
-        keywords = JSON.parse(result.rows[0].value);
-      } catch {
-        // fallback to default
+    let limit = 20;
+
+    for (const row of result.rows) {
+      if (row.key === "scraper_keywords") {
+        try {
+          keywords = JSON.parse(row.value);
+        } catch {}
+      } else if (row.key === "scraper_limit") {
+        try {
+          limit = parseInt(row.value);
+        } catch {}
       }
     }
 
     await client.end();
 
     // Run the scraper
-    const scrapeResult = await runScraper(keywords, databaseUrl);
+    const scrapeResult = await runScraper(keywords, databaseUrl, limit);
     return NextResponse.json(scrapeResult);
   } catch (error) {
     console.error("Scraper run failed:", error);
