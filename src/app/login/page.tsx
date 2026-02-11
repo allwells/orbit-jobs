@@ -14,14 +14,12 @@ import {
 import { useState } from "react";
 import { Lock, User, AlertCircle } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +34,9 @@ export default function LoginPage() {
         },
         {
           onSuccess: () => {
-            router.push("/");
+            // Force a hard navigation to ensure session cookies are properly
+            // recognized by the server middleware and to clear client state.
+            window.location.href = "/";
           },
           onError: (ctx) => {
             setError(
