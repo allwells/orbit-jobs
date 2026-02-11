@@ -30,6 +30,39 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [greeting, setGreeting] = useState("Command Center");
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    const greetings = {
+      late: ["Burning the midnight oil?", "Still awake?", "Late night hustle?"],
+      morning: [
+        "Good morning!",
+        "Rise and shine!",
+        "Let's capture some jobs!",
+        "Ready to ship?",
+      ],
+      afternoon: [
+        "Good afternoon!",
+        "Keep the momentum!",
+        "Productive day?",
+        "Full steam ahead!",
+      ],
+      evening: [
+        "Good evening!",
+        "Time to automate!",
+        "Wrapping up?",
+        "Evening hustle!",
+      ],
+    };
+
+    let options = greetings.evening;
+    if (hour < 5) options = greetings.late;
+    else if (hour < 12) options = greetings.morning;
+    else if (hour < 17) options = greetings.afternoon;
+
+    setGreeting(options[Math.floor(Math.random() * options.length)]);
+  }, []);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -100,7 +133,7 @@ export default function DashboardPage() {
       <div>
         <Group gap="sm" align="center" mb={4}>
           <Title order={2} fw={700}>
-            Command Center
+            {greeting}
           </Title>
           <Badge
             variant="gradient"
