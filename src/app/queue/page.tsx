@@ -132,6 +132,45 @@ export default function QueuePage() {
     }
   };
 
+  const handleGenerateSingle = async (id: string) => {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/ai/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        notifications.show({
+          title: "Job Processed",
+          message: "AI content generated successfully",
+          color: "teal",
+          icon: <Sparkles size={18} />,
+        });
+        setModalOpened(false);
+        setActiveTab("draft");
+        fetchStats();
+      } else {
+        notifications.show({
+          title: "Processing Failed",
+          message: data.error || "Unknown error",
+          color: "red",
+        });
+      }
+    } catch (error) {
+      console.error("AI Gen Error:", error);
+      notifications.show({
+        title: "Error",
+        message: "Failed to connect to AI service",
+        color: "red",
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
       const res = await fetch(`/api/jobs/${id}`, {
@@ -322,13 +361,11 @@ export default function QueuePage() {
                       <Stack gap="sm" style={{ flex: 1 }}>
                         {/* Header */}
                         <Group justify="space-between" wrap="nowrap">
-                          <Badge
-                            color={getStatusColor(job.status)}
-                            variant="light"
-                            size="sm"
-                          >
-                            {job.status}
-                          </Badge>
+                          <Text size="xs" c="dimmed">
+                            {new Date(
+                              job.created_at || "",
+                            ).toLocaleDateString()}
+                          </Text>
                           <ActionIcon
                             variant="subtle"
                             color="gray"
@@ -575,24 +612,39 @@ export default function QueuePage() {
             )}
 
             {/* Actions */}
-            <Group justify="flex-end">
+            {/* Actions */}
+            <Group justify="space-between" mt="md">
               <Button
-                variant="light"
-                color="red"
-                leftSection={<X size={16} />}
-                onClick={() => handleUpdateStatus(selectedJob.id, "rejected")}
+                variant="gradient"
+                gradient={{ from: "indigo", to: "cyan" }}
+                leftSection={<Sparkles size={16} />}
+                loading={generating}
+                onClick={() => handleGenerateSingle(selectedJob.id)}
               >
-                Reject
+                Run AI Brain
               </Button>
-              {selectedJob.status === "draft" && (
+
+              <Group gap="sm">
                 <Button
-                  color="teal"
-                  leftSection={<Check size={16} />}
-                  onClick={() => handleUpdateStatus(selectedJob.id, "approved")}
+                  variant="light"
+                  color="red"
+                  leftSection={<X size={16} />}
+                  onClick={() => handleUpdateStatus(selectedJob.id, "rejected")}
                 >
-                  Approve & Queue
+                  Reject
                 </Button>
-              )}
+                {selectedJob.status === "draft" && (
+                  <Button
+                    color="teal"
+                    leftSection={<Check size={16} />}
+                    onClick={() =>
+                      handleUpdateStatus(selectedJob.id, "approved")
+                    }
+                  >
+                    Approve & Queue
+                  </Button>
+                )}
+              </Group>
             </Group>
           </Stack>
         )}
@@ -603,7 +655,7 @@ export default function QueuePage() {
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
-        
+
         @media (max-width: 768px) {
           .hide-on-mobile {
             display: none;
