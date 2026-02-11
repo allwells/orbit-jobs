@@ -1,0 +1,21 @@
+.statCard {
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--mantine-shadow-sm);
+}
+
+.featureCard {
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.featureCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--mantine-shadow-sm);
+}
