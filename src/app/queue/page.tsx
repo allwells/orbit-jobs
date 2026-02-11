@@ -222,7 +222,9 @@ export default function QueuePage() {
         <Tabs.List mb="md">
           <Tabs.Tab value="pending" leftSection={<ListTodo size={16} />}>
             <Group gap="xs">
-              Pending
+              <span className={activeTab !== "pending" ? "hide-on-mobile" : ""}>
+                Pending
+              </span>
               <Badge size="sm" circle color="gray">
                 {stats?.pendingJobs ?? 0}
               </Badge>
@@ -234,7 +236,9 @@ export default function QueuePage() {
             c="yellow.4"
           >
             <Group gap="xs">
-              AI Drafts
+              <span className={activeTab !== "draft" ? "hide-on-mobile" : ""}>
+                AI Drafts
+              </span>
               <Badge size="sm" circle color="yellow">
                 {stats?.draftJobs ?? 0}
               </Badge>
@@ -246,7 +250,11 @@ export default function QueuePage() {
             c="teal.4"
           >
             <Group gap="xs">
-              Approved
+              <span
+                className={activeTab !== "approved" ? "hide-on-mobile" : ""}
+              >
+                Approved
+              </span>
               <Badge size="sm" circle color="teal">
                 {stats?.approvedJobs ?? 0}
               </Badge>
@@ -258,7 +266,11 @@ export default function QueuePage() {
             c="red.4"
           >
             <Group gap="xs">
-              Rejected
+              <span
+                className={activeTab !== "rejected" ? "hide-on-mobile" : ""}
+              >
+                Rejected
+              </span>
               <Badge size="sm" circle color="red">
                 {stats?.rejectedJobs ?? 0}
               </Badge>
@@ -590,6 +602,12 @@ export default function QueuePage() {
         .job-card-hover:hover {
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        @media (max-width: 768px) {
+          .hide-on-mobile {
+            display: none;
+          }
         }
       `}</style>
     </Stack>
