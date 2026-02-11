@@ -25,10 +25,8 @@ import {
   Info,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { formatDate } from "@/utils/formatters";
 import dayjs from "dayjs";
-import advancedFormat from "dayjs/plugin/advancedFormat";
-
-dayjs.extend(advancedFormat);
 
 const FREQUENCY_OPTIONS = [
   { value: "15", label: "Every 15 minutes" },
@@ -210,18 +208,6 @@ export default function SettingsPage() {
     } finally {
       setScraping(false);
     }
-  };
-
-  const isToday = (dateStr: string) => {
-    return dayjs(dateStr).isSame(dayjs(), "day");
-  };
-
-  const formatDate = (dateStr: string) => {
-    if (isToday(dateStr)) {
-      return `Today @ ${dayjs(dateStr).format("h:mm A")}`;
-    }
-
-    return dayjs(dateStr).format("Do MMMM, YYYY @ h:mm A");
   };
 
   const calculateNextRun = () => {

@@ -38,6 +38,7 @@ import {
   ArcElement,
 } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
+import { formatDate } from "@/utils/formatters";
 
 // Register Chart.js components
 ChartJS.register(
@@ -216,7 +217,8 @@ export default function DashboardPage() {
       value: stats ? String(stats.draftJobs) : "0",
       icon: Zap,
       color: "violet",
-      description: (stats?.draftJobs ?? 0) > 0 ? "Ready to review" : "No drafts yet",
+      description:
+        (stats?.draftJobs ?? 0) > 0 ? "Ready to review" : "No drafts yet",
     },
     {
       title: "Posts Published",
@@ -367,7 +369,7 @@ export default function DashboardPage() {
                   Last Run
                 </Text>
                 <Text size="sm" fw={500}>
-                  {new Date(stats.lastScrape.created_at).toLocaleString()}
+                  {formatDate(stats.lastScrape.created_at)}
                 </Text>
                 <Text size="xs" c="dimmed">
                   {formatTimeAgo(stats.lastScrape.created_at)}
@@ -381,15 +383,7 @@ export default function DashboardPage() {
                   Next Scheduled Run
                 </Text>
                 <Text size="sm" fw={600} c="teal">
-                  {calculateNextRun()!.toLocaleString()}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  in{" "}
-                  {formatTimeAgo(
-                    new Date(
-                      Date.now() - (calculateNextRun()!.getTime() - Date.now()),
-                    ).toISOString(),
-                  )}
+                  {formatDate(calculateNextRun()!.toISOString())}
                 </Text>
               </div>
             )}
