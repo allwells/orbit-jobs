@@ -1,6 +1,9 @@
 /** Status of a job in the pipeline */
 export type JobStatus = "pending" | "approved" | "posted" | "rejected";
 
+/** Work mode for a job listing */
+export type WorkMode = "remote" | "on-site" | "hybrid" | null;
+
 /** Core job listing scraped from LinkedIn */
 export interface Job {
   id: string;
@@ -10,6 +13,7 @@ export interface Job {
   salary: string | null;
   url: string;
   location: string | null;
+  work_mode: WorkMode;
 
   /** AI-generated hook tweet (no link) */
   ai_hook: string | null;

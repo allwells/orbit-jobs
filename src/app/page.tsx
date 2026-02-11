@@ -10,42 +10,91 @@ import {
   ThemeIcon,
   Badge,
   rem,
+  Loader,
 } from "@mantine/core";
 import { Briefcase, Zap, Send, TrendingUp } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import styles from "./page.module.css";
 
-const stats = [
-  {
-    title: "Jobs Scraped",
-    value: "0",
-    icon: Briefcase,
-    color: "indigo",
-    description: "Awaiting first scrape",
-  },
-  {
-    title: "AI Drafts Ready",
-    value: "0",
-    icon: Zap,
-    color: "violet",
-    description: "No drafts yet",
-  },
-  {
-    title: "Posts Published",
-    value: "0",
-    icon: Send,
-    color: "teal",
-    description: "Nothing posted yet",
-  },
-  {
-    title: "Impressions",
-    value: "—",
-    icon: TrendingUp,
-    color: "orange",
-    description: "Connect X Analytics",
-  },
-];
+interface DashboardStats {
+  totalJobs: number;
+  pendingJobs: number;
+  approvedJobs: number;
+  postedJobs: number;
+  rejectedJobs: number;
+  lastScrape: {
+    created_at: string;
+    metadata: Record<string, unknown>;
+  } | null;
+  hasKeywords: boolean;
+}
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await fetch("/api/dashboard/stats");
+      const data = await res.json();
+      setStats(data);
+    } catch (error) {
+      console.error("Failed to fetch stats:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  const formatTimeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
+  const statCards = [
+    {
+      title: "Jobs Scraped",
+      value: stats ? String(stats.totalJobs) : "—",
+      icon: Briefcase,
+      color: "indigo",
+      description: stats
+        ? stats.totalJobs > 0
+          ? `${stats.pendingJobs} pending review`
+          : "Awaiting first scrape"
+        : "Loading...",
+    },
+    {
+      title: "AI Drafts Ready",
+      value: "0",
+      icon: Zap,
+      color: "violet",
+      description: "No drafts yet",
+    },
+    {
+      title: "Posts Published",
+      value: stats ? String(stats.postedJobs) : "0",
+      icon: Send,
+      color: "teal",
+      description:
+        stats && stats.postedJobs > 0
+          ? `${stats.approvedJobs} approved`
+          : "Nothing posted yet",
+    },
+    {
+      title: "Impressions",
+      value: "—",
+      icon: TrendingUp,
+      color: "orange",
+      description: "Connect X Analytics",
+    },
+  ];
+
   return (
     <Stack gap="lg">
       {/* ── Header ──────────────────────────────── */}
@@ -59,7 +108,7 @@ export default function DashboardPage() {
             gradient={{ from: "indigo", to: "violet" }}
             size="sm"
           >
-            Phase 1
+            Phase 2
           </Badge>
         </Group>
         <Text c="dimmed" size="sm">
@@ -70,7 +119,7 @@ export default function DashboardPage() {
 
       {/* ── Stats Grid ──────────────────────────── */}
       <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="md">
-        {stats.map((stat) => (
+        {statCards.map((stat) => (
           <Paper
             key={stat.title}
             p="md"
@@ -121,12 +170,26 @@ export default function DashboardPage() {
             </div>
           </Group>
           <Text size="sm" c="dimmed">
-            Phase 2 — Configure scraping keywords and frequency to begin
-            sourcing high-paying tech jobs automatically.
+            {stats?.hasKeywords
+              ? "Stealth scraper is configured and ready. Keywords are set up for LinkedIn job search."
+              : "Configure scraping keywords in Settings to begin sourcing jobs automatically."}
           </Text>
-          <Badge mt="sm" variant="outline" color="gray" size="sm">
-            Coming Soon
-          </Badge>
+          <Group mt="sm" gap="xs">
+            {stats?.hasKeywords ? (
+              <Badge variant="light" color="teal" size="sm">
+                Active
+              </Badge>
+            ) : (
+              <Badge variant="outline" color="gray" size="sm">
+                Not Configured
+              </Badge>
+            )}
+            {stats?.lastScrape && (
+              <Badge variant="light" color="gray" size="sm">
+                Last run: {formatTimeAgo(stats.lastScrape.created_at)}
+              </Badge>
+            )}
+          </Group>
         </Paper>
 
         <Paper p="lg" radius="md" withBorder className={styles.featureCard}>
