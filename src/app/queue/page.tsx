@@ -359,12 +359,19 @@ export default function QueuePage() {
                       className="job-card-hover"
                     >
                       <Stack gap="sm" style={{ flex: 1 }}>
-                        {/* Header */}
-                        <Group justify="space-between" wrap="nowrap">
-                          <Text size="xs" c="dimmed">
-                            {new Date(
-                              job.created_at || "",
-                            ).toLocaleDateString()}
+                        {/* Header with Title and Link */}
+                        <Group
+                          justify="space-between"
+                          wrap="nowrap"
+                          align="flex-start"
+                        >
+                          <Text
+                            fw={600}
+                            size="md"
+                            lineClamp={2}
+                            style={{ flex: 1 }}
+                          >
+                            {job.title}
                           </Text>
                           <ActionIcon
                             variant="subtle"
@@ -373,15 +380,11 @@ export default function QueuePage() {
                             href={job.url}
                             target="_blank"
                             onClick={(e) => e.stopPropagation()}
+                            mt={2}
                           >
                             <ExternalLink size={16} />
                           </ActionIcon>
                         </Group>
-
-                        {/* Title */}
-                        <Text fw={600} size="md" lineClamp={2}>
-                          {job.title}
-                        </Text>
 
                         {/* Company & Location */}
                         <Stack gap={4}>
