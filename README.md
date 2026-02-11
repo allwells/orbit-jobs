@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🪐 OrbitJobs
 
-## Getting Started
+**Monetizing high-value job listings on X (Twitter) through human-in-the-loop automation.**
 
-First, run the development server:
+OrbitJobs is a specialized content engine designed to bridge the gap between job platforms (like LinkedIn) and X's Ads Revenue Sharing program. It hunts for high-paying tech jobs, uses Gemini Pro to rewrite them into viral-ready "hooks," and delivers them to a command center for review and posting.
+
+---
+
+## 🚀 The Vision
+
+OrbitJobs removes the heavy lifting of sourcing and writing while maintaining the "human" feel essential for modern social algorithms.
+
+- **Source:** Stealth scraping of public job data.
+- **Polish:** Gemini Pro optimized "Hook + Reply" thread generation.
+- **Notify:** Real-time Telegram alerts for new high-value leads.
+- **Publish:** A mobile-responsive command center for manual or semi-automated posting.
+
+---
+
+## 🛠️ Technology Stack
+
+- **Framework:** Next.js 16 (App Router)
+- **Runtime:** Bun
+- **Styling:** Mantine UI v8 + Vanilla CSS
+- **Theme:** Strict Dark Mode (`#101010`) with Electric Indigo (`#6366F1`)
+- **Intelligence:** Gemini Pro (Google AI SDK)
+- **Scraper:** Playwright (Stealth Mode)
+- **Database:** Supabase
+- **Icons:** Lucide React
+
+---
+
+## 📈 Implementation Roadmap
+
+### Phase 1: Infrastructure & Mantine Theming ✅
+
+- Initialize Next.js + TypeScript + Bun.
+- Custom Mantine theme with strict `#101010` background.
+- Responsive AppShell with theme toggle (Vercel-style).
+- Supabase integration and core database types.
+
+### Phase 2: "The Seeker" (Stealth Scraper) 🏗️
+
+- Playwright-based LinkedIn scraping (logged-out state).
+- Jitter, human-like scrolling, and user-agent rotation.
+- Search keyword management UI.
+
+### Phase 3: "The Brain" (Gemini Pro) 🧪
+
+- Automated Hook/Reply thread generation.
+- Strict "No Links in Main Tweet" rule.
+- Content draft archival.
+
+### Phase 4: "The Messenger" (Telegram) 📬
+
+- Push notifications for new jobs.
+- Direct deep-links to the OrbitJobs dashboard.
+
+### Phase 5: "The Command Center" (Posting) 🖥️
+
+- Job queue management.
+- Dual posting (Manual Copy or X API v2).
+- API rate limit tracking.
+
+---
+
+## 📦 Getting Started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Install dependencies
+bun install
+
+# Run development server
+bun run dev
+
+# Build for production
+bun run build
+
+# Run type check
+bun run typecheck
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📸 Phase 1 Preview
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Theme:** Electric Indigo primary, `#101010` background.
+- **Toggle:** Vercel-style System/Light/Dark mode.
+- **Mobile:** Fully responsive layout for on-the-go approvals.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Developed for **@TheOrbitJobs**
