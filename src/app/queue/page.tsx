@@ -18,6 +18,8 @@ import {
   Divider,
   Box,
   ThemeIcon,
+  Menu,
+  ScrollArea,
 } from "@mantine/core";
 import {
   Sparkles,
@@ -30,6 +32,10 @@ import {
   DollarSign,
   Check,
   X,
+  Trash,
+  RefreshCw,
+  FileText,
+  MoreVertical,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Job } from "@/types/database";
@@ -53,6 +59,7 @@ export default function QueuePage() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [modalOpened, setModalOpened] = useState(false);
   const [stats, setStats] = useState<QueueStats | null>(null);
+  const [scrapingDesc, setScrapingDesc] = useState(false);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -197,6 +204,73 @@ export default function QueuePage() {
         message: "Failed to update job status",
         color: "red",
       });
+    }
+  };
+
+  const handleDeleteJob = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this job?")) return;
+    try {
+      const res = await fetch(`/api/jobs/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setJobs((prev) => prev.filter((j) => j.id !== id));
+        if (selectedJob?.id === id) setModalOpened(false);
+        notifications.show({
+          title: "Deleted",
+          message: "Job deleted",
+          color: "gray",
+        });
+        fetchStats();
+      } else {
+        throw new Error("Failed to delete");
+      }
+    } catch (error) {
+      notifications.show({
+        title: "Error",
+        message: "Failed to delete job",
+        color: "red",
+      });
+    }
+  };
+
+  const handleScrapeDescription = async () => {
+    if (!selectedJob) return;
+    setScrapingDesc(true);
+    try {
+      const res = await fetch("/api/scraper/description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedJob.id,
+          url: selectedJob.url,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const newDesc = data.description;
+        setSelectedJob((prev) =>
+          prev ? { ...prev, description: newDesc } : null,
+        );
+        setJobs((prev) =>
+          prev.map((j) =>
+            j.id === selectedJob.id ? { ...j, description: newDesc } : j,
+          ),
+        );
+        notifications.show({
+          title: "Success",
+          message: "Job description scraped",
+          color: "teal",
+        });
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      notifications.show({
+        title: "Error",
+        message: "Failed to scrape description",
+        color: "red",
+      });
+    } finally {
+      setScrapingDesc(false);
     }
   };
 
@@ -384,6 +458,31 @@ export default function QueuePage() {
                           >
                             <ExternalLink size={16} />
                           </ActionIcon>
+
+                          <Menu position="bottom-end" withinPortal>
+                            <Menu.Target>
+                              <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                onClick={(e) => e.stopPropagation()}
+                                mt={2}
+                              >
+                                <MoreVertical size={16} />
+                              </ActionIcon>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              <Menu.Item
+                                leftSection={<Trash size={14} />}
+                                color="red"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteJob(job.id);
+                                }}
+                              >
+                                Delete Job
+                              </Menu.Item>
+                            </Menu.Dropdown>
+                          </Menu>
                         </Group>
 
                         {/* Company & Location */}
@@ -532,8 +631,42 @@ export default function QueuePage() {
                     View on LinkedIn
                   </Text>
                 </Group>
+                <Group>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    leftSection={<FileText size={14} />}
+                    onClick={handleScrapeDescription}
+                    loading={scrapingDesc}
+                    disabled={!!selectedJob.description}
+                  >
+                    {selectedJob.description
+                      ? "Description Scraped"
+                      : "Scrape Description"}
+                  </Button>
+                </Group>
               </Stack>
             </div>
+
+            {selectedJob.description && (
+              <>
+                <Divider />
+                <div>
+                  <Text fw={600} size="sm" mb="xs">
+                    Description
+                  </Text>
+                  <ScrollArea.Autosize mah={200}>
+                    <Text
+                      size="sm"
+                      c="dimmed"
+                      style={{ whiteSpace: "pre-wrap" }}
+                    >
+                      {selectedJob.description}
+                    </Text>
+                  </ScrollArea.Autosize>
+                </div>
+              </>
+            )}
 
             <Divider />
 
@@ -617,25 +750,45 @@ export default function QueuePage() {
             {/* Actions */}
             {/* Actions */}
             <Group justify="space-between" mt="md">
-              <Button
-                variant="gradient"
-                gradient={{ from: "indigo", to: "cyan" }}
-                leftSection={<Sparkles size={16} />}
-                loading={generating}
-                onClick={() => handleGenerateSingle(selectedJob.id)}
-              >
-                Run AI Brain
-              </Button>
+              <Group>
+                {(selectedJob.status === "pending" ||
+                  selectedJob.status === "rejected") && (
+                  <Button
+                    variant="gradient"
+                    gradient={{ from: "indigo", to: "cyan" }}
+                    leftSection={<Sparkles size={16} />}
+                    loading={generating}
+                    onClick={() => handleGenerateSingle(selectedJob.id)}
+                  >
+                    Run AI Brain
+                  </Button>
+                )}
+                {selectedJob.status === "approved" && (
+                  <Button
+                    variant="outline"
+                    color="indigo"
+                    leftSection={<RefreshCw size={16} />}
+                    loading={generating}
+                    onClick={() => handleGenerateSingle(selectedJob.id)}
+                  >
+                    Re-run AI Brain
+                  </Button>
+                )}
+              </Group>
 
               <Group gap="sm">
-                <Button
-                  variant="light"
-                  color="red"
-                  leftSection={<X size={16} />}
-                  onClick={() => handleUpdateStatus(selectedJob.id, "rejected")}
-                >
-                  Reject
-                </Button>
+                {selectedJob.status !== "rejected" && (
+                  <Button
+                    variant="light"
+                    color="red"
+                    leftSection={<X size={16} />}
+                    onClick={() =>
+                      handleUpdateStatus(selectedJob.id, "rejected")
+                    }
+                  >
+                    Reject
+                  </Button>
+                )}
                 {selectedJob.status === "draft" && (
                   <Button
                     color="teal"

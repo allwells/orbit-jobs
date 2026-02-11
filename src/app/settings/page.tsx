@@ -40,15 +40,11 @@ const FREQUENCY_OPTIONS = [
 const LIMIT_OPTIONS = ["5", "10", "20", "40", "50", "70", "100"];
 
 const GEMINI_MODELS = [
-  { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash (Recommended)" },
-  { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
-  { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
-  { value: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash Lite" },
+  { value: "gemini-3-pro-preview", label: "Gemini 3 Pro Preview" },
+  { value: "gemini-3-flash-preview", label: "Gemini 3 Flash Preview" },
+  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Recommended)" },
   { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
   { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite" },
-  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
-  { value: "gemini-3-flash-preview", label: "Gemini 3 Flash Preview" },
-  { value: "gemini-3-pro-preview", label: "Gemini 3 Pro Preview" },
 ];
 
 interface ScraperStatus {
@@ -69,7 +65,7 @@ export default function SettingsPage() {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [frequency, setFrequency] = useState<string | null>("60");
   const [limit, setLimit] = useState<string | null>("20");
-  const [model, setModel] = useState<string | null>("gemini-2.0-flash-exp");
+  const [model, setModel] = useState<string | null>("gemini-2.5-flash");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [scraping, setScraping] = useState(false);

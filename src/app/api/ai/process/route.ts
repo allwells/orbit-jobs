@@ -15,10 +15,9 @@ export async function POST(req: Request) {
 
       if (id) {
         // Fetch specific job
-        const result = await client.query(
-          "SELECT * FROM job WHERE id = $1 AND (status = 'pending' OR status = 'draft')",
-          [id],
-        );
+        const result = await client.query("SELECT * FROM job WHERE id = $1", [
+          id,
+        ]);
         jobs = result.rows;
       } else {
         // Fetch batch of pending jobs

@@ -300,3 +300,47 @@ export async function runScraper(
     await client.end();
   }
 }
+
+/** Scrape full description from a job URL */
+export async function scrapeJobDescription(
+  url: string,
+): Promise<string | null> {
+  let browser: Browser | null = null;
+  try {
+    browser = await launchStealthBrowser();
+    const page = await createStealthPage(browser);
+
+    console.log(`📄 Scraping description: ${url}`);
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+    await jitter(2000, 4000);
+
+    // Try multiple selectors common for LinkedIn job pages
+    const selectors = [
+      "div.description__text",
+      "div.show-more-less-html__markup",
+      "article.jobs-description__container",
+      "div.jobs-description-content__text",
+    ];
+
+    for (const selector of selectors) {
+      try {
+        const element = await page.$(selector);
+        if (element) {
+          const text = await element.textContent();
+          if (text && text.length > 100) {
+            return text.trim();
+          }
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Failed to scrape description:", error);
+    return null;
+  } finally {
+    if (browser) await browser.close();
+  }
+}

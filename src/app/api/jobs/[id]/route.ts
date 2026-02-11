@@ -58,3 +58,34 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+
+    const client = await pool.connect();
+    try {
+      const result = await client.query(
+        "DELETE FROM job WHERE id = $1 RETURNING id",
+        [id],
+      );
+
+      if (result.rowCount === 0) {
+        return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      }
+
+      return NextResponse.json({ success: true, id });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error("Failed to delete job:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}

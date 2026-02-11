@@ -19,6 +19,8 @@ export interface Job {
   url: string;
   location: string | null;
   work_mode: WorkMode;
+  /** Full job description scraped separately */
+  description: string | null;
 
   /** AI-generated hook tweet (no link) */
   ai_hook: string | null;

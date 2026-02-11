@@ -15,11 +15,11 @@ export interface AIContent {
 
 /**
  * Generates viral X (Twitter) content for a tech job using Gemini.
- * Allows specifying a model, defaults to 'gemini-2.0-flash-exp'.
+ * Allows specifying a model, defaults to 'gemini-2.5-pro'.
  */
 export async function generateJobContent(
   job: Job,
-  modelName: string = "gemini-2.0-flash",
+  modelName: string = "gemini-1.5-flash",
 ): Promise<AIContent> {
   try {
     const prompt = `You are an expert tech recruiter and viral social media strategist specializing in Developer Relations and Engineering roles.
@@ -33,6 +33,7 @@ Job Details:
 - Location: ${job.location || "Remote/Flexible"}
 - Work Mode: ${job.work_mode || "Unknown"}
 - URL: ${job.url}
+${job.description ? `\nFull Job Description:\n${job.description.slice(0, 8000)}\n` : ""}
 
 CRITICAL: Respond with ONLY a valid JSON object. No markdown, no code blocks, no extra text.
 
