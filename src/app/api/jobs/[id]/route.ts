@@ -1,6 +1,36 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+
+    const client = await pool.connect();
+    try {
+      const result = await client.query("SELECT * FROM job WHERE id = $1", [
+        id,
+      ]);
+
+      if (result.rows.length === 0) {
+        return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      }
+
+      return NextResponse.json({ success: true, data: result.rows[0] });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error("Failed to fetch job:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },

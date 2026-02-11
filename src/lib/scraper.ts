@@ -224,13 +224,14 @@ export async function runScraper(
 
     // Insert into database (deduplicate by linkedin_job_id)
     let inserted = 0;
+    const newJobs: any[] = [];
     for (const job of jobs) {
       try {
         const result = await client.query(
           `INSERT INTO job (id, linkedin_job_id, title, company, salary, url, location, work_mode)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            ON CONFLICT (linkedin_job_id) DO NOTHING
-           RETURNING id`,
+           RETURNING *`,
           [
             crypto.randomUUID(),
             job.linkedin_job_id,
@@ -242,9 +243,45 @@ export async function runScraper(
             job.work_mode,
           ],
         );
-        if (result.rows.length > 0) inserted++;
+        if (result.rows.length > 0) {
+          inserted++;
+          newJobs.push(result.rows[0]);
+        }
       } catch {
         // Skip duplicate / error
+      }
+    }
+
+    // Send Telegram notification if new jobs were found
+    if (newJobs.length > 0) {
+      try {
+        // Fetch Telegram chat ID from settings
+        const chatIdResult = await client.query(
+          "SELECT value FROM setting WHERE key = 'telegram_chat_id'",
+        );
+
+        if (chatIdResult.rows.length > 0) {
+          const chatId = chatIdResult.rows[0].value;
+          const { sendJobNotification } = await import("./telegram");
+          const notificationSent = await sendJobNotification(newJobs, chatId);
+
+          if (notificationSent) {
+            await client.query(
+              `INSERT INTO log (id, type, message, metadata, created_at)
+               VALUES ($1, $2, $3, $4, $5)`,
+              [
+                crypto.randomUUID(),
+                "notification",
+                `Sent Telegram notification for ${newJobs.length} new job${newJobs.length > 1 ? "s" : ""}`,
+                JSON.stringify({ jobCount: newJobs.length, chatId }),
+                new Date().toISOString(),
+              ],
+            );
+          }
+        }
+      } catch (notifError) {
+        console.error("Failed to send Telegram notification:", notifError);
+        // Don't fail the scrape if notification fails
       }
     }
 

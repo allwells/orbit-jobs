@@ -14,6 +14,7 @@ import {
   Notification,
   Loader,
   rem,
+  TextInput,
 } from "@mantine/core";
 import {
   Settings,
@@ -23,9 +24,11 @@ import {
   CheckCircle,
   AlertCircle,
   Info,
+  Send,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { formatDate } from "@/utils/formatters";
+import { notifications } from "@mantine/notifications";
 
 const FREQUENCY_OPTIONS = [
   { value: "15", label: "Every 15 minutes" },
@@ -76,6 +79,8 @@ export default function SettingsPage() {
   const [scraperStatus, setScraperStatus] = useState<ScraperStatus | null>(
     null,
   );
+  const [telegramChatId, setTelegramChatId] = useState<string>("");
+  const [testingTelegram, setTestingTelegram] = useState(false);
 
   // Fetch current settings
   const fetchSettings = useCallback(async () => {
@@ -102,6 +107,9 @@ export default function SettingsPage() {
       }
       if (settings.gemini_model) {
         setModel(settings.gemini_model);
+      }
+      if (settings.telegram_chat_id) {
+        setTelegramChatId(settings.telegram_chat_id);
       }
       setScraperStatus(status);
     } catch (error) {
@@ -195,6 +203,74 @@ export default function SettingsPage() {
       console.error("Failed to save model:", error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Save Telegram Chat ID
+  const saveTelegramChatId = async () => {
+    if (!telegramChatId.trim()) return;
+    setSaving(true);
+    try {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: "telegram_chat_id",
+          value: telegramChatId.trim(),
+        }),
+      });
+      notifications.show({
+        title: "Saved",
+        message: "Telegram Chat ID saved successfully",
+        color: "teal",
+      });
+    } catch (error) {
+      console.error("Failed to save Telegram Chat ID:", error);
+      notifications.show({
+        title: "Error",
+        message: "Failed to save Telegram Chat ID",
+        color: "red",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Test Telegram notification
+  const testTelegramNotification = async () => {
+    if (!telegramChatId.trim()) {
+      notifications.show({
+        title: "Error",
+        message: "Please enter a Chat ID first",
+        color: "red",
+      });
+      return;
+    }
+    setTestingTelegram(true);
+    try {
+      const res = await fetch("/api/telegram/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId: telegramChatId.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        notifications.show({
+          title: "Success",
+          message: "Test notification sent! Check your Telegram.",
+          color: "teal",
+        });
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      notifications.show({
+        title: "Error",
+        message: error.message || "Failed to send test notification",
+        color: "red",
+      });
+    } finally {
+      setTestingTelegram(false);
     }
   };
 
@@ -407,6 +483,56 @@ export default function SettingsPage() {
             Add at least one keyword above to enable scraping.
           </Text>
         )}
+      </Paper>
+
+      {/* ── Telegram Notifications ──────────────────── */}
+      <Paper p="lg" radius="md" withBorder>
+        <Group gap="sm" mb="md">
+          <Send size={20} style={{ color: "var(--mantine-color-blue-6)" }} />
+          <Text fw={600}>Telegram Notifications</Text>
+        </Group>
+        <Text c="dimmed" size="sm" mb="md">
+          Get notified on Telegram when new jobs are found. To get your Chat ID,
+          message{" "}
+          <Text
+            component="a"
+            href="https://t.me/userinfobot"
+            target="_blank"
+            c="blue"
+            span
+          >
+            @userinfobot
+          </Text>{" "}
+          on Telegram.
+        </Text>
+        <Stack gap="md">
+          <TextInput
+            label="Telegram Chat ID"
+            placeholder="-1234567890"
+            value={telegramChatId}
+            onChange={(e) => setTelegramChatId(e.target.value)}
+            description="Your Telegram user or group chat ID"
+          />
+          <Group>
+            <Button
+              onClick={saveTelegramChatId}
+              loading={saving}
+              disabled={!telegramChatId.trim()}
+              variant="light"
+            >
+              Save Chat ID
+            </Button>
+            <Button
+              onClick={testTelegramNotification}
+              loading={testingTelegram}
+              disabled={!telegramChatId.trim()}
+              variant="outline"
+              leftSection={<Send size={16} />}
+            >
+              Test Notification
+            </Button>
+          </Group>
+        </Stack>
       </Paper>
 
       {/* ── Scraper Status ───────────────────────── */}

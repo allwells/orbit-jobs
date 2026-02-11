@@ -38,6 +38,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Job } from "@/types/database";
 import { notifications } from "@mantine/notifications";
 
@@ -51,6 +52,7 @@ interface QueueStats {
 const ITEMS_PER_PAGE = 18;
 
 export default function QueuePage() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<string | null>("pending");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
@@ -95,6 +97,32 @@ export default function QueuePage() {
       setLoading(false);
     }
   }, [activeTab]);
+
+  // Handle deep linking from Telegram notifications
+  useEffect(() => {
+    const jobId = searchParams.get("job");
+    if (jobId) {
+      // Fetch the specific job and open modal
+      fetch(`/api/jobs/${jobId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.data) {
+            setSelectedJob(data.data);
+            setModalOpened(true);
+            // Switch to the appropriate tab
+            setActiveTab(data.data.status);
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to fetch job from deep link:", error);
+          notifications.show({
+            title: "Error",
+            message: "Job not found",
+            color: "red",
+          });
+        });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchJobs();
