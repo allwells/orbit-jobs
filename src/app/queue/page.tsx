@@ -36,11 +36,14 @@ import {
   RefreshCw,
   FileText,
   MoreVertical,
+  Copy,
+  Send,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Job } from "@/types/database";
 import { notifications } from "@mantine/notifications";
+import { useClipboard } from "@mantine/hooks";
 
 interface QueueStats {
   pendingJobs: number;
@@ -62,6 +65,8 @@ export default function QueuePage() {
   const [modalOpened, setModalOpened] = useState(false);
   const [stats, setStats] = useState<QueueStats | null>(null);
   const [scrapingDesc, setScrapingDesc] = useState(false);
+  const [posting, setPosting] = useState(false);
+  const clipboard = useClipboard({ timeout: 2000 });
 
   const fetchStats = useCallback(async () => {
     try {
@@ -299,6 +304,74 @@ export default function QueuePage() {
       });
     } finally {
       setScrapingDesc(false);
+    }
+  };
+
+  const handleCopyContent = () => {
+    if (!selectedJob) return;
+
+    // Combine all AI content
+    const content = [
+      selectedJob.ai_hook,
+      ...(Array.isArray(selectedJob.ai_thread) ? selectedJob.ai_thread : []),
+      selectedJob.ai_reply,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    clipboard.copy(content);
+    notifications.show({
+      title: "Copied!",
+      message: "Content copied to clipboard",
+      color: "teal",
+    });
+  };
+
+  const handlePostToX = async () => {
+    if (!selectedJob) return;
+
+    // Combine all AI content
+    const content = [
+      selectedJob.ai_hook,
+      ...(Array.isArray(selectedJob.ai_thread) ? selectedJob.ai_thread : []),
+      selectedJob.ai_reply,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    setPosting(true);
+    try {
+      const res = await fetch("/api/twitter/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId: selectedJob.id,
+          content,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        notifications.show({
+          title: "Posted!",
+          message: `Tweet posted successfully. ${data.remainingPosts} posts remaining this month.`,
+          color: "teal",
+        });
+        // Refresh jobs to update status
+        fetchJobs();
+        setModalOpened(false);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      notifications.show({
+        title: "Error",
+        message: error.message || "Failed to post to X",
+        color: "red",
+      });
+    } finally {
+      setPosting(false);
     }
   };
 
@@ -770,6 +843,27 @@ export default function QueuePage() {
                     )}
                   </Stack>
                 </div>
+
+                {/* Copy and Post Buttons */}
+                <Group mt="md" justify="space-between">
+                  <Button
+                    variant="light"
+                    leftSection={<Copy size={16} />}
+                    onClick={handleCopyContent}
+                    color={clipboard.copied ? "teal" : "blue"}
+                  >
+                    {clipboard.copied ? "Copied!" : "Copy Content"}
+                  </Button>
+                  <Button
+                    variant="gradient"
+                    gradient={{ from: "blue", to: "cyan" }}
+                    leftSection={<Send size={16} />}
+                    onClick={handlePostToX}
+                    loading={posting}
+                  >
+                    Post to X
+                  </Button>
+                </Group>
 
                 <Divider />
               </>

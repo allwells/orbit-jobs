@@ -60,3 +60,21 @@ export interface Log {
   metadata: Record<string, unknown> | null;
   created_at: string;
 }
+
+/** Twitter/X post tracking */
+export interface TwitterPost {
+  id: string;
+  job_id: string;
+  tweet_id: string | null;
+  posted_at: string;
+  status: "success" | "failed";
+  error_message: string | null;
+}
+
+/** Twitter/X analytics data */
+export interface TwitterAnalytics {
+  postsThisMonth: number;
+  remainingPosts: number;
+  limit: number;
+  recentPosts: TwitterPost[];
+}
