@@ -1,6 +1,21 @@
 import TelegramBot from "node-telegram-bot-api";
 import { Job } from "@/types/database";
 
+const token = process.env.TELEGRAM_BOT_TOKEN;
+const chatId = process.env.TELEGRAM_CHAT_ID;
+
+/**
+ * Creates a Telegram bot instance with proper configuration
+ */
+function createBot(): TelegramBot {
+  if (!token) {
+    throw new Error("TELEGRAM_BOT_TOKEN not configured");
+  }
+
+  // Create bot without polling to avoid conflicts in serverless environment
+  return new TelegramBot(token, { polling: false });
+}
+
 /**
  * Sends a Telegram notification when new jobs are found.
  * Includes job details and deep links to the dashboard.
@@ -9,8 +24,6 @@ export async function sendJobNotification(
   jobs: Job[],
   chatId: string,
 ): Promise<boolean> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-
   if (!token) {
     console.error("TELEGRAM_BOT_TOKEN not configured");
     return false;
@@ -26,7 +39,7 @@ export async function sendJobNotification(
   }
 
   try {
-    const bot = new TelegramBot(token);
+    const bot = createBot();
 
     // Build the message
     const jobCount = jobs.length;
@@ -86,25 +99,108 @@ export async function sendJobNotification(
 
 /**
  * Sends a test notification to verify Telegram configuration.
+ * Includes comprehensive diagnostics for troubleshooting.
  */
 export async function sendTestNotification(chatId: string): Promise<boolean> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-
   if (!token) {
     throw new Error("TELEGRAM_BOT_TOKEN not configured");
   }
 
+  console.log("\n🔍 Telegram Test Notification Debug Info:");
+  console.log(`   Chat ID: ${chatId}`);
+  console.log(`   Chat ID Type: ${typeof chatId}`);
+  console.log(`   Chat ID Length: ${chatId.length}`);
+  console.log(`   Is Negative (Group): ${chatId.startsWith("-")}`);
+
   try {
-    const bot = new TelegramBot(token);
+    const bot = createBot();
+
+    // First, try to get bot info to verify token is valid
+    console.log("\n📡 Verifying bot token...");
+    const botInfo = await bot.getMe();
+    console.log(
+      `✅ Bot verified: @${botInfo.username} (${botInfo.first_name})`,
+    );
+
+    // Try to get chat information
+    console.log("\n📡 Fetching chat information...");
+    try {
+      const chat = await bot.getChat(chatId);
+      console.log("✅ Chat found:");
+      console.log(`   Type: ${chat.type}`);
+      console.log(`   ID: ${chat.id}`);
+      if (chat.title) console.log(`   Title: ${chat.title}`);
+      if (chat.username) console.log(`   Username: @${chat.username}`);
+
+      // Check if it's a group and if bot is a member
+      if (chat.type === "group" || chat.type === "supergroup") {
+        console.log("\n📋 Group chat detected. Checking bot membership...");
+        try {
+          const botMember = await bot.getChatMember(chatId, botInfo.id);
+          console.log(`   Bot status in group: ${botMember.status}`);
+
+          if (botMember.status === "left" || botMember.status === "kicked") {
+            throw new Error(
+              `Bot is not a member of this group (status: ${botMember.status}). ` +
+                `Please add @${botInfo.username} to the group first.`,
+            );
+          }
+        } catch (memberError: any) {
+          if (memberError.message?.includes("not a member")) {
+            throw new Error(
+              `Bot @${botInfo.username} is not a member of this group. ` +
+                `Please add the bot to the group first.`,
+            );
+          }
+          throw memberError;
+        }
+      }
+    } catch (chatError: any) {
+      console.error("❌ Failed to get chat info:", chatError.message);
+
+      if (chatError.message?.includes("chat not found")) {
+        const isGroup = chatId.startsWith("-");
+        const troubleshootingSteps = isGroup
+          ? [
+              `The chat ID ${chatId} was not found.`,
+              "",
+              "For GROUP CHATS:",
+              `1. Add @${botInfo.username} to your group`,
+              "2. Make sure the bot has permission to send messages",
+              "3. Verify your Chat ID by adding @RawDataBot to the group",
+              "4. The Chat ID should match exactly (including the minus sign)",
+              "",
+              "Note: Group IDs are negative numbers (e.g., -5275501976)",
+              "Supergroup IDs start with -100 (e.g., -1005275501976)",
+            ]
+          : [
+              `The chat ID ${chatId} was not found.`,
+              "",
+              "For DIRECT MESSAGES:",
+              `1. Open Telegram and search for @${botInfo.username}`,
+              "2. Send /start to the bot",
+              "3. Get your user ID from @userinfobot",
+              "4. Use that ID (positive number) as your Chat ID",
+            ];
+
+        throw new Error(troubleshootingSteps.join("\n"));
+      }
+
+      throw chatError;
+    }
+
+    // Send test message
+    console.log("\n📤 Sending test message...");
     const message = `✅ *Test Notification*\\n\\nYour Telegram integration is working correctly\\!`;
 
     await bot.sendMessage(chatId, message, {
       parse_mode: "MarkdownV2",
     });
 
+    console.log(`✅ Test notification sent successfully to ${chatId}\n`);
     return true;
-  } catch (error) {
-    console.error("Failed to send test notification:", error);
+  } catch (error: any) {
+    console.error("\n❌ Test notification failed:", error.message);
     throw error;
   }
 }
