@@ -2,7 +2,7 @@
 
 **Monetizing high-value job listings on X (Twitter) through human-in-the-loop automation.**
 
-OrbitJobs is a specialized content engine designed to bridge the gap between job platforms (like LinkedIn) and X's Ads Revenue Sharing program. It hunts for high-paying tech jobs, uses Gemini Pro to rewrite them into viral-ready "hooks," and delivers them to a command center for review and posting.
+OrbitJobs is a specialized content engine designed to bridge the gap between job platforms and X's Ads Revenue Sharing program. It hunts for high-paying tech jobs, uses Gemini Pro to rewrite them into viral-ready "hooks," and delivers them to a command center for review and posting.
 
 ---
 
@@ -41,7 +41,7 @@ OrbitJobs removes the heavy lifting of sourcing and writing while maintaining th
 
 ### Phase 2: "The Seeker" (Stealth Scraper) 🏗️
 
-- Playwright-based LinkedIn scraping (logged-out state).
+- Playwright-based scraping (logged-out state).
 - Jitter, human-like scrolling, and user-agent rotation.
 - Search keyword management UI.
 

@@ -54,7 +54,19 @@ interface QueueStats {
 
 const ITEMS_PER_PAGE = 18;
 
-export default function QueuePage() {
+import { Suspense } from "react";
+
+// ... (existing imports)
+
+export default function QueuePageWrapper() {
+  return (
+    <Suspense fallback={<Loader />}>
+      <QueuePageContent />
+    </Suspense>
+  );
+}
+
+function QueuePageContent() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<string | null>("pending");
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -420,7 +432,7 @@ export default function QueuePage() {
             gradient={{ from: "indigo", to: "cyan" }}
             onClick={handleGenerate}
             loading={generating}
-            disabled={jobs.length === 0}
+            disabled
           >
             Run AI Brain (Batch 5)
           </Button>
@@ -575,9 +587,10 @@ export default function QueuePage() {
                               <Menu.Item
                                 leftSection={<Trash size={14} />}
                                 color="red"
+                                disabled
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleDeleteJob(job.id);
+                                  // handleDeleteJob(job.id);
                                 }}
                               >
                                 Delete Job
@@ -729,7 +742,7 @@ export default function QueuePage() {
                     c="blue"
                     style={{ textDecoration: "none" }}
                   >
-                    View on LinkedIn
+                    View
                   </Text>
                 </Group>
                 <Group>
@@ -739,7 +752,7 @@ export default function QueuePage() {
                     leftSection={<FileText size={14} />}
                     onClick={handleScrapeDescription}
                     loading={scrapingDesc}
-                    disabled={!!selectedJob.description}
+                    disabled
                   >
                     {selectedJob.description
                       ? "Description Scraped"
@@ -860,6 +873,7 @@ export default function QueuePage() {
                     leftSection={<Send size={16} />}
                     onClick={handlePostToX}
                     loading={posting}
+                    disabled
                   >
                     Post to X
                   </Button>
@@ -881,6 +895,7 @@ export default function QueuePage() {
                     leftSection={<Sparkles size={16} />}
                     loading={generating}
                     onClick={() => handleGenerateSingle(selectedJob.id)}
+                    disabled
                   >
                     Run AI Brain
                   </Button>
@@ -892,6 +907,7 @@ export default function QueuePage() {
                     leftSection={<RefreshCw size={16} />}
                     loading={generating}
                     onClick={() => handleGenerateSingle(selectedJob.id)}
+                    disabled
                   >
                     Re-run AI Brain
                   </Button>
@@ -907,6 +923,7 @@ export default function QueuePage() {
                     onClick={() =>
                       handleUpdateStatus(selectedJob.id, "rejected")
                     }
+                    disabled
                   >
                     Reject
                   </Button>
@@ -918,6 +935,7 @@ export default function QueuePage() {
                     onClick={() =>
                       handleUpdateStatus(selectedJob.id, "approved")
                     }
+                    disabled
                   >
                     Approve & Queue
                   </Button>

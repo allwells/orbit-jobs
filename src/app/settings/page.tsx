@@ -109,7 +109,9 @@ export default function SettingsPage() {
         setModel(settings.gemini_model);
       }
       if (settings.telegram_chat_id) {
-        setTelegramChatId(settings.telegram_chat_id);
+        setTelegramChatId("Hardcoded Chat ID: @orbit_jobs_demo");
+      } else {
+        setTelegramChatId("Hardcoded Chat ID: @orbit_jobs_demo");
       }
       setScraperStatus(status);
     } catch (error) {
@@ -358,8 +360,7 @@ export default function SettingsPage() {
           <Text fw={600}>Scraper Keywords</Text>
         </Group>
         <Text c="dimmed" size="sm" mb="md">
-          Add keywords to search for on LinkedIn. The scraper combines them with
-          OR logic.
+          Add keywords to search for. The scraper combines them with OR logic.
         </Text>
         <TagsInput
           placeholder="Type a keyword and press Enter"
@@ -368,6 +369,7 @@ export default function SettingsPage() {
           data={[]}
           maxTags={20}
           clearable
+          disabled
         />
         <Text c="dimmed" size="xs" mt="xs">
           {keywords.length} keyword{keywords.length !== 1 ? "s" : ""} configured
@@ -392,6 +394,7 @@ export default function SettingsPage() {
           onChange={saveModel}
           allowDeselect={false}
           w={300}
+          disabled
         />
       </Paper>
 
@@ -410,6 +413,7 @@ export default function SettingsPage() {
           onChange={saveFrequency}
           allowDeselect={false}
           w={300}
+          disabled
         />
       </Paper>
 
@@ -431,6 +435,7 @@ export default function SettingsPage() {
           onChange={saveLimit}
           allowDeselect={false}
           w={300}
+          disabled
         />
       </Paper>
 
@@ -473,7 +478,7 @@ export default function SettingsPage() {
           loading={scraping}
           color="indigo"
           leftSection={<Play size={16} />}
-          disabled={keywords.length === 0}
+          disabled
         >
           {scraping ? "Scraping..." : "Run Scraper"}
         </Button>
@@ -512,12 +517,13 @@ export default function SettingsPage() {
             value={telegramChatId}
             onChange={(e) => setTelegramChatId(e.target.value)}
             description="Your Telegram user or group chat ID"
+            disabled
           />
           <Group>
             <Button
               onClick={saveTelegramChatId}
               loading={saving}
-              disabled={!telegramChatId.trim()}
+              disabled
               variant="light"
             >
               Save Chat ID
@@ -525,7 +531,7 @@ export default function SettingsPage() {
             <Button
               onClick={testTelegramNotification}
               loading={testingTelegram}
-              disabled={!telegramChatId.trim()}
+              disabled
               variant="outline"
               leftSection={<Send size={16} />}
             >

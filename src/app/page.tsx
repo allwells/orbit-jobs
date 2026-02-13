@@ -1,5 +1,8 @@
 "use client";
 
+import { Alert } from "@mantine/core";
+import { Info } from "lucide-react";
+
 import {
   Title,
   Text,
@@ -272,6 +275,18 @@ export default function DashboardPage() {
 
   return (
     <Stack gap="md">
+      {/* ── Read-Only Banner ────────────────────── */}
+      <Alert
+        variant="light"
+        color="blue"
+        title="Portfolio Demo Mode"
+        icon={<Info size={16} />}
+      >
+        This application is running in a read-only portfolio mode. All backend
+        mutations and 3rd-party integrations (Jobs Scraping, Gemini AI, X
+        posting) are disabled. Feel free to explore the UI!
+      </Alert>
+
       {/* ── Header ──────────────────────────────── */}
       <div>
         <Group gap="sm" align="center" mb={4}>
@@ -474,13 +489,13 @@ export default function DashboardPage() {
               <div>
                 <Text fw={600}>The Seeker</Text>
                 <Text size="xs" c="dimmed">
-                  LinkedIn Stealth Scraper
+                  Stealth Scraper
                 </Text>
               </div>
             </Group>
             <Text size="sm" c="dimmed">
               {stats?.hasKeywords
-                ? "Stealth scraper is configured and ready. Keywords are set up for LinkedIn job search."
+                ? "Stealth scraper is configured and ready. Keywords are set up for job search."
                 : "Configure scraping keywords in Settings to begin sourcing jobs automatically."}
             </Text>
             <Group mt="sm" gap="xs">

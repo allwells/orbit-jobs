@@ -8,12 +8,13 @@ export default function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Check for BetterAuth session cookie
+  // 2. Check for BetterAuth session cookie OR Portfolio Access Token
   // BetterAuth defaults to [prefix].session_token
   // In production (HTTPS), it may use __Secure- prefix
   const sessionCookie =
     request.cookies.get("orbit-jobs.session_token") ||
-    request.cookies.get("__Secure-orbit-jobs.session_token");
+    request.cookies.get("__Secure-orbit-jobs.session_token") ||
+    request.cookies.get("orbit-portfolio-token");
 
   if (!sessionCookie) {
     const loginUrl = new URL("/login", request.url);

@@ -10,9 +10,10 @@ import {
   Box,
   Notification,
   rem,
+  Alert,
 } from "@mantine/core";
 import { useState } from "react";
-import { Lock, User, AlertCircle, Check } from "lucide-react";
+import { Lock, User, AlertCircle, Check, Info } from "lucide-react";
 import { notifications } from "@mantine/notifications";
 import { authClient } from "@/lib/auth-client";
 import { Logo } from "@/components/Logo";
@@ -28,39 +29,29 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    try {
-      await authClient.signIn.username(
-        {
-          username,
-          password,
-        },
-        {
-          onSuccess: () => {
-            notifications.show({
-              title: "Access Granted",
-              message: "Redirecting to Command Center...",
-              color: "teal",
-              icon: <Check style={{ width: rem(18), height: rem(18) }} />,
-              autoClose: 2000,
-            });
+    // Mock Login for Portfolio
+    setTimeout(() => {
+      if (username === "demo" && password === "demo123") {
+        // Set portfolio cookie to bypass middleware
+        document.cookie =
+          "orbit-portfolio-token=allowed; path=/; max-age=86400; SameSite=Lax";
 
-            // Force a hard navigation after a brief delay ensuring notification is seen
-            setTimeout(() => {
-              window.location.href = "/";
-            }, 800);
-          },
-          onError: (ctx) => {
-            setError(
-              ctx.error.message || "Invalid credentials. Access denied.",
-            );
-            setLoading(false);
-          },
-        },
-      );
-    } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
-      setLoading(false);
-    }
+        notifications.show({
+          title: "Demo Access Granted",
+          message: "Welcome to the portfolio demo! Redirecting...",
+          color: "teal",
+          icon: <Check style={{ width: rem(18), height: rem(18) }} />,
+          autoClose: 2000,
+        });
+
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 800);
+      } else {
+        setError("Invalid demo credentials. Please check the provided info.");
+        setLoading(false);
+      }
+    }, 1000);
   };
 
   return (
@@ -133,6 +124,20 @@ export default function LoginPage() {
                 },
               }}
             />
+
+            <Alert
+              variant="light"
+              color="blue"
+              title="Demo Access"
+              icon={<Info size={16} />}
+              mb="xs"
+            >
+              <Text size="sm">
+                Username: <strong>demo</strong>
+                <br />
+                Password: <strong>demo123</strong>
+              </Text>
+            </Alert>
 
             <Button
               fullWidth
