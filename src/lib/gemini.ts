@@ -4,7 +4,8 @@ import { Job } from "@/types/database";
 // Initialize Gemini AI client
 // The client automatically picks up GEMINI_API_KEY from environment
 // but we can pass it explicitly if needed
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const apiKey = process.env.GEMINI_API_KEY || "dummy_key_for_build";
+const ai = new GoogleGenAI({ apiKey });
 
 export interface AIContent {
   hook: string;
