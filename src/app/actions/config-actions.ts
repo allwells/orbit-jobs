@@ -13,6 +13,7 @@ export async function saveJobFetchConfigAction(config: {
   salary_min?: number;
   date_posted?: string;
   num_results?: number;
+  provider?: string;
 }) {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -41,6 +42,7 @@ export async function saveJobFetchConfigAction(config: {
       num_results: config.num_results
         ? Math.round(config.num_results)
         : undefined,
+      provider: config.provider,
       updated_at: new Date().toISOString(),
     };
 
@@ -56,8 +58,9 @@ export async function saveJobFetchConfigAction(config: {
           salary_min = $5,
           date_posted = $6,
           num_results = $7,
-          updated_at = $8
-        WHERE id = $9
+          provider = $8,
+          updated_at = $9
+        WHERE id = $10
       `;
       await db.query(query, [
         payload.search_query,
@@ -67,6 +70,7 @@ export async function saveJobFetchConfigAction(config: {
         payload.salary_min,
         payload.date_posted,
         payload.num_results,
+        payload.provider,
         payload.updated_at,
         existingResult.rows[0].id,
       ]);
@@ -75,8 +79,8 @@ export async function saveJobFetchConfigAction(config: {
       const query = `
         INSERT INTO job_fetch_config (
           user_id, search_query, location, remote_only, employment_types,
-          salary_min, date_posted, num_results, is_default, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          salary_min, date_posted, num_results, provider, is_default, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       `;
       await db.query(query, [
         userId,
@@ -87,6 +91,7 @@ export async function saveJobFetchConfigAction(config: {
         payload.salary_min,
         payload.date_posted,
         payload.num_results,
+        payload.provider,
         true, // is_default
         payload.updated_at,
       ]);

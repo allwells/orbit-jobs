@@ -16,7 +16,7 @@ export interface JSearchFilters {
     | "no_degree"
   )[];
   datePosted?: "all" | "today" | "3days" | "week" | "month";
-  numPages?: number; // Number of pages to fetch (10 results per page)
+  numResults?: number; // Exact number of results to fetch
 }
 
 export interface JSearchJob {
@@ -92,10 +92,19 @@ export async function searchJobs(
   }
 
   try {
+    let finalQuery = filters.query;
+    // JSearch recommends including "remote" in the query itself for better accuracy
+    if (
+      filters.remoteJobsOnly &&
+      !finalQuery.toLowerCase().includes("remote")
+    ) {
+      finalQuery = `${finalQuery} remote`;
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const params: Record<string, any> = {
-      query: filters.query,
-      num_pages: filters.numPages || 1,
+      query: finalQuery,
+      num_pages: Math.ceil((filters.numResults || 10) / 10),
     };
 
     if (filters.location) params.location = filters.location;
@@ -118,7 +127,19 @@ export async function searchJobs(
       },
     });
 
-    return response.data.data || [];
+    let results = response.data.data || [];
+
+    // Enforce remote filter aggressively if the API allowed onsite jobs explicitly to slip through
+    if (filters.remoteJobsOnly) {
+      results = results.filter(
+        (job) =>
+          job.job_is_remote === true ||
+          job.job_city?.toLowerCase() === "remote" ||
+          job.job_title?.toLowerCase().includes("remote"),
+      );
+    }
+
+    return results.slice(0, filters.numResults || 10);
   } catch (error) {
     console.error("JSearch API error:", error);
     // Return empty array instead of throwing to avoid breaking the UI completely if API fails

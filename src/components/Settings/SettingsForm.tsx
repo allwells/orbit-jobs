@@ -49,6 +49,7 @@ import {
 import { RateLimitTracker } from "@/components/Settings/RateLimitTracker";
 import { useDisclosure } from "@mantine/hooks";
 import { authClient } from "@/lib/auth-client";
+import { DATE_POSTED_OPTIONS } from "@/components/JobFetchModal/constants";
 
 interface SettingsFormProps {
   initialSettings: Record<string, any>;
@@ -90,6 +91,12 @@ export function SettingsForm({
   );
   const [remoteOnly, setRemoteOnly] = useState(
     initialJobFetchConfig?.remote_only || false,
+  );
+  const [numResults, setNumResults] = useState<number | string>(
+    initialJobFetchConfig?.num_results || 20,
+  );
+  const [datePosted, setDatePosted] = useState<string | null>(
+    initialJobFetchConfig?.date_posted || "3days",
   );
 
   // States
@@ -139,6 +146,8 @@ export function SettingsForm({
         location: location,
         remote_only: remoteOnly,
         salary_min: Number(salaryMin),
+        num_results: Number(numResults),
+        date_posted: datePosted || "3days",
       });
       notifications.show({
         title: "Success",
@@ -483,6 +492,22 @@ export function SettingsForm({
                   prefix="$"
                   value={salaryMin}
                   onChange={setSalaryMin}
+                />
+              </Group>
+              <Group grow>
+                <Select
+                  label="Date Posted"
+                  data={DATE_POSTED_OPTIONS}
+                  value={datePosted}
+                  onChange={setDatePosted}
+                  allowDeselect={false}
+                />
+                <NumberInput
+                  label="Results to Fetch"
+                  value={numResults}
+                  onChange={setNumResults}
+                  min={5}
+                  max={100}
                 />
               </Group>
               <Switch

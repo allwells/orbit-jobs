@@ -52,6 +52,8 @@ export async function upsertDefaultJobFetchConfigAction(data: {
   location: string;
   remote_only: boolean;
   salary_min: number;
+  num_results: number;
+  date_posted: string;
 }) {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -61,7 +63,14 @@ export async function upsertDefaultJobFetchConfigAction(data: {
     throw new Error("Unauthorized");
   }
 
-  const { search_query, location, remote_only, salary_min } = data;
+  const {
+    search_query,
+    location,
+    remote_only,
+    salary_min,
+    num_results,
+    date_posted,
+  } = data;
 
   // Check if default exists
   const existing = await db
@@ -79,6 +88,8 @@ export async function upsertDefaultJobFetchConfigAction(data: {
         location,
         remote_only,
         salary_min,
+        num_results,
+        date_posted,
         updated_at: new Date().toISOString(),
       })
       .where("id", "=", existing.id)
@@ -93,6 +104,8 @@ export async function upsertDefaultJobFetchConfigAction(data: {
         location,
         remote_only,
         salary_min,
+        num_results,
+        date_posted,
         is_default: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

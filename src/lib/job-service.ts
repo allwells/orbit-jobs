@@ -1,11 +1,31 @@
 import { db } from "@/lib/db";
-import { searchJobs, type JSearchFilters, type JSearchJob } from "./jsearch";
+import { db as kyselyDb } from "@/lib/kysely";
+import { searchJobs, type JSearchJob } from "./jsearch";
+import { searchAdzunaJobs, type AdzunaJob } from "./adzuna";
+import { searchRemotiveJobs, type RemotiveJob } from "./remotive";
+import { searchRemoteOKJobs, type RemoteOKJob } from "./remoteok";
 import { activityLogger, logActivityServer } from "./activity-logger";
 import {
   notifyBatchNewJobs,
   notifyJobFetchComplete,
 } from "./notification-service";
 import type { Job } from "@/types/job";
+
+export interface JobFilters {
+  query: string; // e.g., "remote react developer"
+  location?: string; // Optional location filter
+  remoteJobsOnly?: boolean;
+  employmentTypes?: ("FULLTIME" | "CONTRACTOR" | "PARTTIME" | "INTERN")[];
+  jobRequirements?: (
+    | "under_3_years_experience"
+    | "more_than_3_years_experience"
+    | "no_experience"
+    | "no_degree"
+  )[];
+  datePosted?: "all" | "today" | "3days" | "week" | "month";
+  numResults?: number;
+  provider?: "jsearch" | "adzuna" | "remotive" | "remoteok";
+}
 
 export interface JobFetchResult {
   totalFetched: number;
@@ -16,13 +36,35 @@ export interface JobFetchResult {
 
 export async function fetchAndStoreJobs(
   userId: string,
-  filters: JSearchFilters,
+  filters: JobFilters,
 ): Promise<JobFetchResult> {
   const startTime = Date.now();
+  const provider = filters.provider || "jsearch";
 
   try {
-    // Fetch from JSearch API
-    const apiJobs = await searchJobs(filters);
+    let apiJobs: any[] = [];
+    let jobIds: string[] = [];
+
+    // Fetch from selected API
+    if (provider === "adzuna") {
+      apiJobs = await searchAdzunaJobs(filters);
+      jobIds = apiJobs.map((job) => `adzuna-${job.id}`);
+    } else if (provider === "remotive") {
+      apiJobs = await searchRemotiveJobs(filters);
+      jobIds = apiJobs.map((job) => `remotive-${job.id}`);
+    } else if (provider === "remoteok") {
+      apiJobs = await searchRemoteOKJobs(filters);
+      jobIds = apiJobs.map((job) => `remoteok-${job.id}`);
+    } else {
+      apiJobs = await searchJobs({
+        ...filters,
+        // map our standard job filters back to jsearch filters format loosely, although the types align mostly well
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        query: filters.query,
+      } as any);
+      jobIds = apiJobs.map((job) => job.job_id);
+    }
+
     const totalFetched = apiJobs.length;
 
     if (totalFetched === 0) {
@@ -44,7 +86,6 @@ export async function fetchAndStoreJobs(
     }
 
     // Check for existing job_ids in database
-    const jobIds = apiJobs.map((job) => job.job_id);
     // pg syntax for ANY array
     const existingJobsResult = await db.query(
       "SELECT job_id FROM jobs WHERE job_id = ANY($1)",
@@ -56,63 +97,44 @@ export async function fetchAndStoreJobs(
       existingJobsResult.rows.map((row: any) => row.job_id),
     );
 
-    // Filter out duplicates
-    const newApiJobs = apiJobs.filter((job) => !existingJobIds.has(job.job_id));
+    // Filter out duplicates and transform
+    let newApiJobs: any[] = [];
+    let jobsToInsert: Partial<Job>[] = [];
 
-    // Transform and insert new jobs
-    const jobsToInsert = newApiJobs.map(transformJSearchJobToDbJob);
+    if (provider === "adzuna") {
+      newApiJobs = apiJobs.filter(
+        (job) => !existingJobIds.has(`adzuna-${job.id}`),
+      );
+      jobsToInsert = newApiJobs.map(transformAdzunaJobToDbJob);
+    } else if (provider === "remotive") {
+      newApiJobs = apiJobs.filter(
+        (job) => !existingJobIds.has(`remotive-${job.id}`),
+      );
+      jobsToInsert = newApiJobs.map(transformRemotiveJobToDbJob);
+    } else if (provider === "remoteok") {
+      newApiJobs = apiJobs.filter(
+        (job) => !existingJobIds.has(`remoteok-${job.id}`),
+      );
+      jobsToInsert = newApiJobs.map(transformRemoteOKJobToDbJob);
+    } else {
+      newApiJobs = apiJobs.filter((job) => !existingJobIds.has(job.job_id));
+      jobsToInsert = newApiJobs.map(transformJSearchJobToDbJob);
+    }
 
     const insertedJobs: Job[] = [];
     if (jobsToInsert.length > 0) {
-      // batch insert logic for pg
-      // constructing the VALUES part
-      // ($1, $2, ...), ($x, $y, ...)
-      // This is complex with vanilla pg.
-      // Simpler approach: sequential inserts in transaction, or use a helper.
-      // Given the small batch size (10-20), Promise.all is acceptable or a loop.
-      // A transaction is better.
-
-      const client = await db.connect();
       try {
-        await client.query("BEGIN");
+        const result = await kyselyDb
+          .insertInto("jobs")
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .values(jobsToInsert as any[])
+          .returningAll()
+          .execute();
 
-        for (const job of jobsToInsert) {
-          const query = `
-             INSERT INTO jobs (
-               job_id, title, company, location, salary_min, salary_max, 
-               salary_currency, employment_type, remote_allowed, description, 
-               required_skills, apply_url, source, raw_data, status
-             ) VALUES (
-               $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
-             ) RETURNING *
-           `;
-          const values = [
-            job.job_id,
-            job.title,
-            job.company,
-            job.location,
-            job.salary_min,
-            job.salary_max,
-            job.salary_currency,
-            job.employment_type,
-            job.remote_allowed,
-            job.description,
-            job.required_skills,
-            job.apply_url,
-            job.source,
-            job.raw_data,
-            job.status,
-          ];
-          const res = await client.query(query, values);
-          insertedJobs.push(res.rows[0]);
-        }
-
-        await client.query("COMMIT");
+        insertedJobs.push(...(result as Job[]));
       } catch (e) {
-        await client.query("ROLLBACK");
+        console.error("Batch insert failed:", e);
         throw e;
-      } finally {
-        client.release();
       }
     }
 
@@ -160,7 +182,7 @@ export async function fetchAndStoreJobs(
       title: "API Error",
       description: error instanceof Error ? error.message : "Unknown error",
       metadata: {
-        endpoint: "jsearch/search",
+        endpoint: `${provider}/search`,
         error: error instanceof Error ? error.message : "Unknown error",
         ...filters,
       },
@@ -205,6 +227,72 @@ export function transformJSearchJobToDbJob(apiJob: JSearchJob): Partial<Job> {
     required_skills: combinedSkills,
     apply_url: apiJob.job_apply_link,
     source: "jsearch",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    raw_data: apiJob as any,
+    status: "pending",
+  };
+}
+
+export function transformAdzunaJobToDbJob(apiJob: AdzunaJob): Partial<Job> {
+  return {
+    job_id: `adzuna-${apiJob.id}`,
+    title: apiJob.title,
+    company: apiJob.company?.display_name || "Unknown Company",
+    location: apiJob.location?.display_name || null,
+    salary_min: apiJob.salary_min ? Math.round(apiJob.salary_min) : null,
+    salary_max: apiJob.salary_max ? Math.round(apiJob.salary_max) : null,
+    salary_currency: "USD",
+    employment_type: apiJob.contract_type || null,
+    remote_allowed:
+      apiJob.title?.toLowerCase().includes("remote") ||
+      apiJob.location?.display_name?.toLowerCase().includes("remote") ||
+      false,
+    description: apiJob.description,
+    required_skills: [],
+    apply_url: apiJob.redirect_url,
+    source: "adzuna",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    raw_data: apiJob as any,
+    status: "pending",
+  };
+}
+
+export function transformRemotiveJobToDbJob(apiJob: RemotiveJob): Partial<Job> {
+  return {
+    job_id: `remotive-${apiJob.id}`,
+    title: apiJob.title,
+    company: apiJob.company_name,
+    location: apiJob.candidate_required_location || "Worldwide",
+    salary_min: null,
+    salary_max: null,
+    salary_currency: "USD",
+    employment_type: apiJob.job_type || null,
+    remote_allowed: true,
+    description: apiJob.description,
+    required_skills: apiJob.category ? [apiJob.category] : [],
+    apply_url: apiJob.url,
+    source: "remotive",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    raw_data: apiJob as any,
+    status: "pending",
+  };
+}
+
+export function transformRemoteOKJobToDbJob(apiJob: RemoteOKJob): Partial<Job> {
+  return {
+    job_id: `remoteok-${apiJob.id}`,
+    title: apiJob.position,
+    company: apiJob.company,
+    location: apiJob.location || "Remote",
+    salary_min: apiJob.salary_min || null,
+    salary_max: apiJob.salary_max || null,
+    salary_currency: "USD",
+    employment_type: null,
+    remote_allowed: true,
+    description: apiJob.description,
+    required_skills: apiJob.tags || [],
+    apply_url: apiJob.apply_url || apiJob.url,
+    source: "remoteok",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     raw_data: apiJob as any,
     status: "pending",

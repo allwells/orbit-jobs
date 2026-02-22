@@ -118,30 +118,6 @@ export function BulkActionsBar({
                   style={{ flex: 1, justifyContent: "flex-end" }}
                 >
                   <Button
-                    leftSection={<IconCheck size={16} />}
-                    color="green"
-                    size="xs"
-                    variant="filled"
-                    onClick={onApproveSelected}
-                    loading={isProcessingApproved}
-                    disabled={isProcessingRejected || isProcessingDeleted}
-                    flex={{ base: 1, sm: "initial" }}
-                  >
-                    APPROVE
-                  </Button>
-                  <Button
-                    leftSection={<IconX size={16} />}
-                    color="red"
-                    size="xs"
-                    variant="filled"
-                    onClick={onRejectSelected}
-                    loading={isProcessingRejected}
-                    disabled={isProcessingApproved || isProcessingDeleted}
-                    flex={{ base: 1, sm: "initial" }}
-                  >
-                    REJECT
-                  </Button>
-                  <Button
                     color="red"
                     size="xs"
                     variant="outline"

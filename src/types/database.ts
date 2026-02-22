@@ -178,6 +178,7 @@ export interface Database {
           salary_min: number | null;
           date_posted: string | null;
           num_results: number | null;
+          provider: string | null;
           last_run_at: string | null;
           last_run_results_count: number | null;
           last_run_new_jobs: number | null;
@@ -196,6 +197,7 @@ export interface Database {
           salary_min?: number | null;
           date_posted?: string | null;
           num_results?: number | null;
+          provider?: string | null;
           last_run_at?: string | null;
           last_run_results_count?: number | null;
           last_run_new_jobs?: number | null;
@@ -214,6 +216,7 @@ export interface Database {
           salary_min?: number | null;
           date_posted?: string | null;
           num_results?: number | null;
+          provider?: string | null;
           last_run_at?: string | null;
           last_run_results_count?: number | null;
           last_run_new_jobs?: number | null;

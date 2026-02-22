@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS job_fetch_config (
   salary_min INTEGER,
   date_posted VARCHAR(20), -- 'all', 'today', 'week', 'month'
   num_results INTEGER DEFAULT 10,
+  provider VARCHAR(50) DEFAULT 'jsearch',
   last_run_at TIMESTAMP,
   last_run_results_count INTEGER,
   last_run_new_jobs INTEGER,

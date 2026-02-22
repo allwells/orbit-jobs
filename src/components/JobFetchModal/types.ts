@@ -6,4 +6,5 @@ export interface JobFetchConfig {
   salary_min: number | undefined;
   date_posted: "all" | "today" | "3days" | "week" | "month";
   num_results: number;
+  provider: "jsearch" | "adzuna" | "remotive" | "remoteok";
 }

@@ -213,7 +213,7 @@ export function JobDetailModal({
               </Stack>
 
               {/* Approval Actions */}
-              {job.status === "pending" && (
+              {job.status === "pending" && job.ai_content_generated && (
                 <Group gap={6} style={{ flexShrink: 0 }}>
                   <Tooltip label="Approve">
                     <ActionIcon
@@ -265,9 +265,11 @@ export function JobDetailModal({
           <Divider label="Job Description" labelPosition="center" />
 
           {/* Description */}
-          <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
-            {job.description}
-          </Text>
+          <Box
+            fz="sm"
+            dangerouslySetInnerHTML={{ __html: job.description || "" }}
+            style={{ lineHeight: 1.6 }}
+          />
 
           {/* Footer Actions */}
           <Group justify="space-between" mt="md" wrap="nowrap">

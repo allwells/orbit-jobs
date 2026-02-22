@@ -134,7 +134,7 @@ export function JobMobileCard({
                 View Details
               </Menu.Item>
 
-              {job.status === "pending" && (
+              {job.status === "pending" && job.ai_content_generated && (
                 <>
                   <Menu.Item
                     leftSection={<IconCheck size={14} />}

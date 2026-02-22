@@ -13,6 +13,7 @@ export async function fetchJobsAction(formData: {
   employment_types?: string[];
   date_posted?: string;
   num_results: number;
+  provider: "jsearch" | "adzuna" | "remotive" | "remoteok";
 }) {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -30,7 +31,8 @@ export async function fetchJobsAction(formData: {
     employmentTypes: formData.employment_types as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     datePosted: formData.date_posted as any,
-    numPages: Math.ceil(formData.num_results / 10),
+    numResults: formData.num_results,
+    provider: formData.provider,
   });
 
   revalidatePath("/jobs");

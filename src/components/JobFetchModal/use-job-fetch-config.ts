@@ -42,6 +42,7 @@ export function useJobFetchConfig() {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           date_posted: (data.date_posted as any) || "3days",
           num_results: data.num_results || 20,
+          provider: (data.provider as any) || "jsearch",
         });
 
         setLastRunStats({
@@ -72,6 +73,7 @@ export function useJobFetchConfig() {
         salary_min: newConfig.salary_min,
         date_posted: newConfig.date_posted,
         num_results: newConfig.num_results,
+        provider: newConfig.provider,
       });
 
       setConfig(newConfig);

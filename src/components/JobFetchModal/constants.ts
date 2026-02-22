@@ -8,6 +8,7 @@ export const DEFAULT_CONFIG: JobFetchConfig = {
   salary_min: undefined,
   date_posted: "3days",
   num_results: 20,
+  provider: "jsearch",
 };
 
 export const EMPLOYMENT_TYPES = [

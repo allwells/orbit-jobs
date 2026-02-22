@@ -81,6 +81,7 @@ export function JobFetchModal({ opened, onClose }: JobFetchModalProps) {
         employment_types: values.employment_types,
         date_posted: values.date_posted || undefined,
         num_results: values.num_results,
+        provider: values.provider,
       });
 
       notifications.show({
@@ -128,6 +129,18 @@ export function JobFetchModal({ opened, onClose }: JobFetchModalProps) {
               required
               leftSection={<IconSearch size={16} />}
               {...form.getInputProps("search_query")}
+            />
+
+            <Select
+              label="API Provider"
+              data={[
+                { value: "jsearch", label: "JSearch (RapidAPI)" },
+                { value: "adzuna", label: "Adzuna" },
+                { value: "remotive", label: "Remotive.io" },
+                { value: "remoteok", label: "Remote OK" },
+              ]}
+              allowDeselect={false}
+              {...form.getInputProps("provider")}
             />
 
             <Group grow align="flex-start">
