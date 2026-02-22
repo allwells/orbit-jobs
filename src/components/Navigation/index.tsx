@@ -252,9 +252,7 @@ export function Navigation({ children }: { children: React.ReactNode }) {
             borderTop: `2px solid ${theme.other.border.sidebar}`,
           }}
         >
-          <Group justify="center">
-            <ThemeToggle />
-          </Group>
+          <Group justify="center">{/* <ThemeToggle /> */}</Group>
         </AppShell.Section>
       </AppShell.Navbar>
 

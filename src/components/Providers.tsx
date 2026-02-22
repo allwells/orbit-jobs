@@ -12,8 +12,9 @@ function MantineThemeWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <MantineProvider
-      theme={getTheme(resolvedTheme)}
-      defaultColorScheme={resolvedTheme}
+      theme={getTheme("dark")}
+      defaultColorScheme="dark"
+      forceColorScheme="dark"
     >
       <Notifications position="top-right" />
       <ModalsProvider>{children}</ModalsProvider>
