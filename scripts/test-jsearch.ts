@@ -21,8 +21,8 @@ async function verifyJSearch() {
     // NOTE: This will consume 1 API call from the quota.
     const jobs = await searchJobs({
       query: "Node.js Developer",
-      numPages: 1,
-      datePosted: "today",
+      datePosted: "week",
+      numResults: 10,
     });
 
     console.log(`✅ Success! Fetched ${jobs.length} jobs.`);
