@@ -1,16 +1,18 @@
 import { Pool } from "pg";
 
-/**
- * Shared Postgres pool for API routes and server actions.
- * Configured with SSL for production (Supabase compatibility).
- */
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl:
-    process.env.NODE_ENV === "production"
-      ? { rejectUnauthorized: false }
-      : undefined,
-  max: 20, // Reasonable limit for serverless
-});
+const connectionString =
+  process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
 
-export default pool;
+if (!connectionString) {
+  throw new Error(
+    "No database connection string found in environment variables",
+  );
+}
+
+export const db = new Pool({
+  connectionString,
+  max: 5,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});

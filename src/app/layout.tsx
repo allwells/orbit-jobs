@@ -1,35 +1,38 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
-
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
+import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
+import { DM_Sans, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Providers } from "@/components/Providers";
 import "./globals.css";
 
-import { Providers } from "./providers";
-
-const inter = Inter({
+const font = DM_Sans({ subsets: ["latin"] });
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-jetbrains-mono",
+});
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
 });
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "Orbit Jobs",
-  description:
-    "Source high-paying tech jobs, polish them with AI, and publish viral-ready threads on X.",
+  description: "Monetize high-value job listings on X",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en" {...mantineHtmlProps}>
       <head>
-        <ColorSchemeScript defaultColorScheme="auto" />
+        <ColorSchemeScript defaultColorScheme="dark" />
       </head>
-      <body className={inter.variable}>
+      <body
+        className={`${font.className} ${jetbrainsMono.variable} ${spaceGrotesk.variable}`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>

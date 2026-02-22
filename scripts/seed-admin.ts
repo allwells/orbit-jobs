@@ -1,139 +1,56 @@
-import { hashPassword } from "better-auth/crypto";
-import { Client } from "pg";
+import { createClient } from "@supabase/supabase-js";
+import { auth } from "../src/lib/auth"; // Import auth instance to use API
 import * as dotenv from "dotenv";
 
 // Load environment variables from .env.local
 dotenv.config({ path: ".env.local" });
 
-const USERNAME = process.env.ADMIN_USERNAME;
-const PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "root";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-/**
- * Seed Script: Securely creates the initial admin user.
- * Restricted to username orbitjobsadmin.
- */
-async function seed() {
-  const databaseUrl = process.env.DATABASE_URL;
+if (!ADMIN_PASSWORD) {
+  console.error("Error: ADMIN_PASSWORD not found in .env.local");
+  process.exit(1);
+}
 
-  if (!databaseUrl) {
-    console.error("❌ Error: DATABASE_URL is not set in .env.local");
-    process.exit(1);
-  }
-
-  const client = new Client({
-    connectionString: databaseUrl,
-  });
-
+async function seedAdmin() {
   try {
-    await client.connect();
-    console.log("🔗 Connected to database.");
-
-    // 1. Create tables if they don't exist (Simplified BetterAuth v1 schema)
-    console.log("🛠️  Ensuring core authentication tables exist...");
-
-    // User Table
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS "user" (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        "emailVerified" BOOLEAN NOT NULL DEFAULT FALSE,
-        image TEXT,
-        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
-        "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW(),
-        password TEXT,
-        username TEXT UNIQUE
-      );
-    `);
-
-    // Session Table
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS session (
-        id TEXT PRIMARY KEY,
-        "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-        token TEXT NOT NULL UNIQUE,
-        "expiresAt" TIMESTAMP NOT NULL,
-        "ipAddress" TEXT,
-        "userAgent" TEXT,
-        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
-        "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
-
-    // Account Table
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS account (
-        id TEXT PRIMARY KEY,
-        "userId" TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-        "accountId" TEXT NOT NULL,
-        "providerId" TEXT NOT NULL,
-        "accessToken" TEXT,
-        "refreshToken" TEXT,
-        "accessTokenExpiresAt" TIMESTAMP,
-        "refreshTokenExpiresAt" TIMESTAMP,
-        scope TEXT,
-        "idToken" TEXT,
-        password TEXT,
-        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
-        "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
-
-    // Verification Table
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS verification (
-        id TEXT PRIMARY KEY,
-        identifier TEXT NOT NULL,
-        value TEXT NOT NULL,
-        "expiresAt" TIMESTAMP NOT NULL,
-        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
-        "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
-
-    // 2. Hash Password and Insert Admin
-    const hashedPassword = await hashPassword(PASSWORD!);
-    const userId = crypto.randomUUID();
-    const accountId = crypto.randomUUID();
-
-    console.log(`👤 Seeding admin user: ${USERNAME}`);
-
-    const result = await client.query(
-      `INSERT INTO "user" (id, name, email, password, username) 
-       VALUES ($1, $2, $3, $4, $5) 
-       ON CONFLICT (username) 
-       DO UPDATE SET password = EXCLUDED.password
-       RETURNING id`,
-      [userId, "Admin", "admin@orbitjobs.local", hashedPassword, USERNAME],
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_KEY ||
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     );
 
-    const actualUserId = result.rows[0].id;
+    console.log(`Cleaning up existing user: ${ADMIN_USERNAME}...`);
+    const { error: deleteError } = await supabase
+      .from("users")
+      .delete()
+      .eq("username", ADMIN_USERNAME);
 
-    // 3. Create credential account record (Better Auth looks here for passwords)
-    // Remove any existing credential account for this user, then insert fresh
-    await client.query(
-      `DELETE FROM account WHERE "userId" = $1 AND "providerId" = 'credential'`,
-      [actualUserId],
-    );
-    await client.query(
-      `INSERT INTO account (id, "userId", "accountId", "providerId", password)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [accountId, actualUserId, actualUserId, "credential", hashedPassword],
-    );
-
-    if (result.rows.length > 0) {
-      console.log(
-        "✅ Admin user and credential account successfully seeded or updated.",
-      );
-    } else {
-      console.log("ℹ️  Admin user already exists.");
+    if (deleteError) {
+      console.error("Cleanup warning (might not exist):", deleteError.message);
     }
+
+    console.log("Creating admin user via BetterAuth API...");
+    // Use signUpEmail which handles password hashing and schema mapping automatically
+    const res = await auth.api.signUpEmail({
+      body: {
+        email: "admin@orbitjobs.com",
+        password: ADMIN_PASSWORD!,
+        name: "Admin User",
+        username: ADMIN_USERNAME, // Pass username to be stored
+      },
+    });
+
+    console.log("Admin user created successfully via API");
   } catch (error) {
-    console.error("❌ Seed failed:", error);
-  } finally {
-    await client.end();
-    console.log("🔌 Database connection closed.");
+    if (error instanceof Error && error.message.includes("APIError")) {
+      console.log("User might already exist or API error:", error.message);
+      // If it failed, it might mean email is taken, let's try to delete by email too?
+    } else {
+      console.error("Failed to seed admin:", error);
+    }
   }
 }
 
-seed();
+seedAdmin();

@@ -1,0 +1,244 @@
+import { db } from "@/lib/db";
+import { searchJobs, type JSearchFilters, type JSearchJob } from "./jsearch";
+import { activityLogger, logActivityServer } from "./activity-logger";
+import {
+  notifyBatchNewJobs,
+  notifyJobFetchComplete,
+} from "./notification-service";
+import type { Job } from "@/types/job";
+
+export interface JobFetchResult {
+  totalFetched: number;
+  newJobs: number;
+  duplicates: number;
+  jobs: Job[];
+}
+
+export async function fetchAndStoreJobs(
+  userId: string,
+  filters: JSearchFilters,
+): Promise<JobFetchResult> {
+  const startTime = Date.now();
+
+  try {
+    // Fetch from JSearch API
+    const apiJobs = await searchJobs(filters);
+    const totalFetched = apiJobs.length;
+
+    if (totalFetched === 0) {
+      await activityLogger.logJobFetch(userId, {
+        query: filters.query,
+        filters: filters,
+        totalFetched: 0,
+        newJobs: 0,
+        duplicates: 0,
+        apiResponseTime: Date.now() - startTime,
+      });
+
+      return {
+        totalFetched: 0,
+        newJobs: 0,
+        duplicates: 0,
+        jobs: [],
+      };
+    }
+
+    // Check for existing job_ids in database
+    const jobIds = apiJobs.map((job) => job.job_id);
+    // pg syntax for ANY array
+    const existingJobsResult = await db.query(
+      "SELECT job_id FROM jobs WHERE job_id = ANY($1)",
+      [jobIds],
+    );
+
+    const existingJobIds = new Set(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      existingJobsResult.rows.map((row: any) => row.job_id),
+    );
+
+    // Filter out duplicates
+    const newApiJobs = apiJobs.filter((job) => !existingJobIds.has(job.job_id));
+
+    // Transform and insert new jobs
+    const jobsToInsert = newApiJobs.map(transformJSearchJobToDbJob);
+
+    const insertedJobs: Job[] = [];
+    if (jobsToInsert.length > 0) {
+      // batch insert logic for pg
+      // constructing the VALUES part
+      // ($1, $2, ...), ($x, $y, ...)
+      // This is complex with vanilla pg.
+      // Simpler approach: sequential inserts in transaction, or use a helper.
+      // Given the small batch size (10-20), Promise.all is acceptable or a loop.
+      // A transaction is better.
+
+      const client = await db.connect();
+      try {
+        await client.query("BEGIN");
+
+        for (const job of jobsToInsert) {
+          const query = `
+             INSERT INTO jobs (
+               job_id, title, company, location, salary_min, salary_max, 
+               salary_currency, employment_type, remote_allowed, description, 
+               required_skills, apply_url, source, raw_data, status
+             ) VALUES (
+               $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+             ) RETURNING *
+           `;
+          const values = [
+            job.job_id,
+            job.title,
+            job.company,
+            job.location,
+            job.salary_min,
+            job.salary_max,
+            job.salary_currency,
+            job.employment_type,
+            job.remote_allowed,
+            job.description,
+            job.required_skills,
+            job.apply_url,
+            job.source,
+            job.raw_data,
+            job.status,
+          ];
+          const res = await client.query(query, values);
+          insertedJobs.push(res.rows[0]);
+        }
+
+        await client.query("COMMIT");
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
+      }
+    }
+
+    const apiResponseTime = Date.now() - startTime;
+
+    // Log activity
+    await activityLogger.logJobFetch(userId, {
+      query: filters.query,
+      filters: filters,
+      totalFetched,
+      newJobs: newApiJobs.length,
+      duplicates: totalFetched - newApiJobs.length,
+      apiResponseTime,
+    });
+
+    // Send Telegram notifications
+    if (insertedJobs.length > 0) {
+      await notifyBatchNewJobs(insertedJobs);
+    }
+
+    await notifyJobFetchComplete(
+      totalFetched,
+      newApiJobs.length,
+      totalFetched - newApiJobs.length,
+    );
+
+    // Update last run stats in job_fetch_config
+    await updateLastRunStats(userId, {
+      totalFetched,
+      newJobs: newApiJobs.length,
+      duplicates: totalFetched - newApiJobs.length,
+    });
+
+    return {
+      totalFetched,
+      newJobs: newApiJobs.length,
+      duplicates: totalFetched - newApiJobs.length,
+      jobs: insertedJobs,
+    };
+  } catch (error) {
+    // Log error activity
+    await logActivityServer({
+      userId,
+      activityType: "api_error",
+      title: "API Error",
+      description: error instanceof Error ? error.message : "Unknown error",
+      metadata: {
+        endpoint: "jsearch/search",
+        error: error instanceof Error ? error.message : "Unknown error",
+        ...filters,
+      },
+    });
+    throw error;
+  }
+}
+
+// Export for testing
+export function transformJSearchJobToDbJob(apiJob: JSearchJob): Partial<Job> {
+  // Using Partial<Job> because id, created_at, updated_at are generated by DB
+  // Extract skills from job_highlights if required_skills is missing
+  const qualifications = apiJob.job_highlights?.Qualifications || [];
+  const explicitSkills = apiJob.job_required_skills || [];
+
+  // Combine unique skills/highlights
+  const combinedSkills = Array.from(
+    new Set([
+      ...explicitSkills,
+      ...qualifications.slice(0, 5), // Take top 5 qualifications as fallback skills
+    ]),
+  );
+
+  return {
+    job_id: apiJob.job_id,
+    title: apiJob.job_title,
+    company: apiJob.employer_name,
+    location:
+      [apiJob.job_city, apiJob.job_state, apiJob.job_country]
+        .filter(Boolean)
+        .join(", ") || null,
+    salary_min: apiJob.job_min_salary
+      ? Math.round(apiJob.job_min_salary)
+      : null,
+    salary_max: apiJob.job_max_salary
+      ? Math.round(apiJob.job_max_salary)
+      : null,
+    salary_currency: apiJob.job_salary_currency || "USD",
+    employment_type: apiJob.job_employment_type,
+    remote_allowed: apiJob.job_is_remote || false, // Default to false if null/undefined
+    description: apiJob.job_description,
+    required_skills: combinedSkills,
+    apply_url: apiJob.job_apply_link,
+    source: "jsearch",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    raw_data: apiJob as any,
+    status: "pending",
+  };
+}
+
+async function updateLastRunStats(
+  userId: string,
+  stats: {
+    totalFetched: number;
+    newJobs: number;
+    duplicates: number;
+  },
+): Promise<void> {
+  try {
+    // We only update the default config or the most recent one.
+    // For now, let's update the entry marked is_default = true
+    const query = `
+      UPDATE job_fetch_config
+      SET 
+        last_run_at = NOW(),
+        last_run_results_count = $1,
+        last_run_new_jobs = $2,
+        last_run_duplicates = $3
+      WHERE user_id = $4 AND is_default = true
+    `;
+
+    await db.query(query, [
+      stats.totalFetched,
+      stats.newJobs,
+      stats.duplicates,
+      userId,
+    ]);
+  } catch (error) {
+    console.error("Failed to update last run stats:", error);
+  }
+}

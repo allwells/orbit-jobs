@@ -1,80 +1,228 @@
-/** Status of a job in the pipeline */
-export type JobStatus =
-  | "pending"
-  | "draft"
-  | "approved"
-  | "posted"
-  | "rejected";
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
 
-/** Work mode for a job listing */
-export type WorkMode = "remote" | "on-site" | "hybrid" | null;
-
-/** Core job listing scraped from LinkedIn */
-export interface Job {
-  id: string;
-  linkedin_job_id: string;
-  title: string;
-  company: string;
-  salary: string | null;
-  url: string;
-  location: string | null;
-  work_mode: WorkMode;
-  /** Full job description scraped separately */
-  description: string | null;
-
-  /** AI-generated hook tweet (no link) */
-  ai_hook: string | null;
-  /** AI-generated thread content (JSON/array) */
-  ai_thread: string[] | null;
-  /** AI-generated reply/link tweet */
-  ai_reply: string | null;
-  /** AI analysis/notes */
-  ai_analysis: string | null;
-
-  status: JobStatus;
-  posted_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-/** Key-value settings store */
-export interface Setting {
-  id: string;
-  key: string;
-  value: string;
-  updated_at: string;
-}
-
-/** Activity / audit log entry */
-export type LogType =
-  | "scrape"
-  | "ai_generate"
-  | "post"
-  | "notification"
-  | "error";
-
-export interface Log {
-  id: string;
-  type: LogType;
-  message: string;
-  metadata: Record<string, unknown> | null;
-  created_at: string;
-}
-
-/** Twitter/X post tracking */
-export interface TwitterPost {
-  id: string;
-  job_id: string;
-  tweet_id: string | null;
-  posted_at: string;
-  status: "success" | "failed";
-  error_message: string | null;
-}
-
-/** Twitter/X analytics data */
-export interface TwitterAnalytics {
-  postsThisMonth: number;
-  remainingPosts: number;
-  limit: number;
-  recentPosts: TwitterPost[];
+export interface Database {
+  public: {
+    Tables: {
+      users: {
+        Row: {
+          id: string; // Changed to match BetterAuth TEXT type
+          username: string;
+          password_hash: string;
+          created_at: string | null;
+          last_login: string | null;
+        };
+        Insert: {
+          id?: string;
+          username: string;
+          password_hash: string;
+          created_at?: string | null;
+          last_login?: string | null;
+        };
+        Update: {
+          id?: string;
+          username?: string;
+          password_hash?: string;
+          created_at?: string | null;
+          last_login?: string | null;
+        };
+      };
+      jobs: {
+        Row: {
+          id: string;
+          job_id: string;
+          title: string;
+          company: string;
+          location: string | null;
+          salary_min: number | null;
+          salary_max: number | null;
+          salary_currency: string | null;
+          employment_type: string | null;
+          remote_allowed: boolean | null;
+          description: string | null;
+          required_skills: string[] | null;
+          apply_url: string;
+          source: string | null;
+          raw_data: Json | null;
+          status: string | null;
+          ai_content_generated: boolean | null;
+          ai_thread_primary: string | null;
+          ai_thread_reply: string | null;
+          ai_model_used: string | null;
+          posted_to_x: boolean | null;
+          posted_at: string | null;
+          x_tweet_id: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          job_id: string;
+          title: string;
+          company: string;
+          location?: string | null;
+          salary_min?: number | null;
+          salary_max?: number | null;
+          salary_currency?: string | null;
+          employment_type?: string | null;
+          remote_allowed?: boolean | null;
+          description?: string | null;
+          required_skills?: string[] | null;
+          apply_url: string;
+          source?: string | null;
+          raw_data?: Json | null;
+          status?: string | null;
+          ai_content_generated?: boolean | null;
+          ai_thread_primary?: string | null;
+          ai_thread_reply?: string | null;
+          ai_model_used?: string | null;
+          posted_to_x?: boolean | null;
+          posted_at?: string | null;
+          x_tweet_id?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          job_id?: string;
+          title?: string;
+          company?: string;
+          location?: string | null;
+          salary_min?: number | null;
+          salary_max?: number | null;
+          salary_currency?: string | null;
+          employment_type?: string | null;
+          remote_allowed?: boolean | null;
+          description?: string | null;
+          required_skills?: string[] | null;
+          apply_url?: string;
+          source?: string | null;
+          raw_data?: Json | null;
+          status?: string | null;
+          ai_content_generated?: boolean | null;
+          ai_thread_primary?: string | null;
+          ai_thread_reply?: string | null;
+          ai_model_used?: string | null;
+          posted_to_x?: boolean | null;
+          posted_at?: string | null;
+          x_tweet_id?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+      };
+      activities: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          activity_type: string;
+          title: string;
+          description: string | null;
+          metadata: Json | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          activity_type: string;
+          title: string;
+          description?: string | null;
+          metadata?: Json | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          activity_type?: string;
+          title?: string;
+          description?: string | null;
+          metadata?: Json | null;
+          created_at?: string | null;
+        };
+      };
+      settings: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          setting_key: string;
+          setting_value: Json;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          setting_key: string;
+          setting_value: Json;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          setting_key?: string;
+          setting_value?: Json;
+          updated_at?: string | null;
+        };
+      };
+      job_fetch_config: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          search_query: string;
+          location: string | null;
+          remote_only: boolean | null;
+          employment_types: string[] | null;
+          salary_min: number | null;
+          date_posted: string | null;
+          num_results: number | null;
+          last_run_at: string | null;
+          last_run_results_count: number | null;
+          last_run_new_jobs: number | null;
+          last_run_duplicates: number | null;
+          is_default: boolean | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          search_query: string;
+          location?: string | null;
+          remote_only?: boolean | null;
+          employment_types?: string[] | null;
+          salary_min?: number | null;
+          date_posted?: string | null;
+          num_results?: number | null;
+          last_run_at?: string | null;
+          last_run_results_count?: number | null;
+          last_run_new_jobs?: number | null;
+          last_run_duplicates?: number | null;
+          is_default?: boolean | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          search_query?: string;
+          location?: string | null;
+          remote_only?: boolean | null;
+          employment_types?: string[] | null;
+          salary_min?: number | null;
+          date_posted?: string | null;
+          num_results?: number | null;
+          last_run_at?: string | null;
+          last_run_results_count?: number | null;
+          last_run_new_jobs?: number | null;
+          last_run_duplicates?: number | null;
+          is_default?: boolean | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+      };
+    };
+  };
 }

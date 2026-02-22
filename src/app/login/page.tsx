@@ -1,171 +1,237 @@
 "use client";
 
+import { useState } from "react";
 import {
   TextInput,
   PasswordInput,
-  Button,
-  Text,
+  Title,
   Container,
-  Stack,
+  Group,
+  Button,
   Box,
-  Notification,
-  rem,
+  Text,
+  Paper,
+  Stack,
+  LoadingOverlay,
 } from "@mantine/core";
-import { useState } from "react";
-import { Lock, User, AlertCircle, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
+import { Lock, User, Terminal } from "lucide-react";
 import { notifications } from "@mantine/notifications";
-import { authClient } from "@/lib/auth-client";
-import { Logo } from "@/components/Logo";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
-      await authClient.signIn.username(
-        {
-          username,
-          password,
-        },
-        {
-          onSuccess: () => {
-            notifications.show({
-              title: "Access Granted",
-              message: "Redirecting to Command Center...",
-              color: "teal",
-              icon: <Check style={{ width: rem(18), height: rem(18) }} />,
-              autoClose: 2000,
-            });
+      await login({ username, password });
 
-            // Force a hard navigation after a brief delay ensuring notification is seen
-            setTimeout(() => {
-              window.location.href = "/";
-            }, 800);
-          },
-          onError: (ctx) => {
-            setError(
-              ctx.error.message || "Invalid credentials. Access denied.",
-            );
-            setLoading(false);
-          },
-        },
-      );
-    } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
+      notifications.show({
+        title: "ACCESS GRANTED",
+        message: "Welcome back, Commander.",
+        color: "green",
+        style: { fontFamily: "var(--font-jetbrains-mono)" },
+      });
+      router.push("/dashboard");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      notifications.show({
+        title: "ACCESS DENIED",
+        message: err.message || "Invalid credentials",
+        color: "red",
+        style: { fontFamily: "var(--font-jetbrains-mono)" },
+      });
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box
-      style={{
-        backgroundColor: "#0A0A0A",
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundImage:
-          "radial-gradient(circle at center, #151515 0%, #0A0A0A 100%)",
-      }}
-    >
-      <Container size={520} my={40}>
-        <Stack gap={4} align="center" mb={24}>
-          <Logo />
+    <div style={{ display: "flex", minHeight: "100vh", width: "100%" }}>
+      {/* Left Panel - Brutalist Branding */}
+      <Box
+        visibleFrom="sm"
+        style={{
+          flex: 1,
+          backgroundColor: "var(--mantine-color-dark-9)",
+          color: "white",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "var(--mantine-spacing-xl)",
+          position: "relative",
+          overflow: "hidden",
+          borderRight: "2px solid var(--mantine-color-default-border)",
+        }}
+      >
+        {/* Background Pattern */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage:
+              "radial-gradient(var(--mantine-color-dark-4) 1px, transparent 1px)",
+            backgroundSize: "20px 20px",
+            opacity: 0.2,
+            zIndex: 0,
+          }}
+        />
+
+        <div style={{ zIndex: 1 }}>
+          <Group gap="xs" mb="lg">
+            <Terminal size={32} />
+            <Text
+              style={{
+                fontFamily: "var(--font-jetbrains-mono)",
+                letterSpacing: "1px",
+              }}
+              fw={700}
+            >
+              ORBIT_JOBS
+            </Text>
+          </Group>
+        </div>
+
+        <Stack gap="xl" style={{ zIndex: 1, maxWidth: 400 }}>
+          <Title
+            order={1}
+            style={{
+              fontSize: "3rem",
+              lineHeight: 1,
+              fontFamily: "var(--font-space-grotesk)",
+              textTransform: "uppercase",
+              letterSpacing: "-1px",
+            }}
+          >
+            Mission Control Center
+          </Title>
+          <Text size="xl" c="dimmed">
+            Manage high-value job listings and track system analytics from a
+            centralized command post.
+          </Text>
         </Stack>
 
-        <form onSubmit={handleLogin}>
-          <Stack gap="xs">
-            {error && (
-              <Notification
-                icon={
-                  <AlertCircle style={{ width: rem(18), height: rem(18) }} />
-                }
-                color="red"
-                title="Access Denied"
-                onClose={() => setError(null)}
-                withCloseButton
-                radius="md"
+        <div style={{ zIndex: 1 }}>
+          <Text
+            style={{ fontFamily: "var(--font-jetbrains-mono)" }}
+            c="dimmed"
+            size="sm"
+          >
+            SYSTEM VERSION 2.0.4
+          </Text>
+        </div>
+      </Box>
+
+      {/* Right Panel - Login Form */}
+      <Box
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "var(--mantine-color-body)",
+          padding: "var(--mantine-spacing-xl)",
+        }}
+      >
+        <Container size="xs" w="100%">
+          <Paper
+            withBorder
+            p="xl"
+            radius={0}
+            style={{
+              borderWidth: "2px",
+              borderColor: "var(--mantine-color-default-border)",
+              boxShadow: "var(--mantine-shadow-xl)",
+              position: "relative",
+            }}
+          >
+            <LoadingOverlay
+              visible={loading}
+              zIndex={1000}
+              overlayProps={{ radius: "sm", blur: 2 }}
+            />
+
+            <Box mb="xl">
+              <Title
+                order={2}
+                style={{ fontFamily: "var(--font-space-grotesk)" }}
               >
-                {error}
-              </Notification>
-            )}
+                System Access
+              </Title>
+            </Box>
 
-            <TextInput
-              placeholder="Username"
-              required
-              size="md"
-              value={username}
-              onChange={(e) => setUsername(e.currentTarget.value)}
-              leftSection={<User size={18} opacity={0.5} />}
-              variant="filled"
-              styles={{
-                input: {
-                  backgroundColor: "#1A1A1A",
-                  color: "white",
-                  "&:focus": {
-                    borderColor: "#6366F1",
-                  },
-                },
-              }}
-            />
-            <PasswordInput
-              placeholder="Password"
-              required
-              size="md"
-              value={password}
-              onChange={(e) => setPassword(e.currentTarget.value)}
-              leftSection={<Lock size={18} opacity={0.5} />}
-              variant="filled"
-              styles={{
-                input: {
-                  backgroundColor: "#1A1A1A",
-                  color: "white",
-                  "&:focus": {
-                    borderColor: "#6366F1",
-                  },
-                },
-              }}
-            />
+            <form onSubmit={handleLogin}>
+              <Stack>
+                <TextInput
+                  label="Username"
+                  placeholder="ENTER ID"
+                  value={username}
+                  onChange={(event) => setUsername(event.currentTarget.value)}
+                  leftSection={<User size={16} />}
+                  required
+                  radius={0}
+                  styles={{
+                    input: { fontFamily: "var(--font-jetbrains-mono)" },
+                    label: {
+                      fontFamily: "var(--font-jetbrains-mono)",
+                      textTransform: "uppercase",
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                    },
+                  }}
+                />
 
-            <Button
-              fullWidth
-              mt="xs"
-              size="md"
-              color="indigo"
-              type="submit"
-              loading={loading}
-              radius="md"
-              styles={{
-                root: {
-                  background:
-                    "linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)",
-                  transition: "transform 0.1s ease",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(135deg, #5850EC 0%, #4338CA 100%)",
-                  },
-                  "&:active": {
-                    transform: "scale(0.98)",
-                  },
-                },
-              }}
-            >
-              Login
-            </Button>
-          </Stack>
-        </form>
+                <PasswordInput
+                  label="Password"
+                  placeholder="ENTER PASSCODE"
+                  value={password}
+                  onChange={(event) => setPassword(event.currentTarget.value)}
+                  leftSection={<Lock size={16} />}
+                  required
+                  radius={0}
+                  styles={{
+                    input: { fontFamily: "var(--font-jetbrains-mono)" },
+                    label: {
+                      fontFamily: "var(--font-jetbrains-mono)",
+                      textTransform: "uppercase",
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                    },
+                  }}
+                />
 
-        <Text ta="center" mt="xl" size="xs" c="dimmed">
-          Restricted access system. Unauthorized attempts are logged.
-        </Text>
-      </Container>
-    </Box>
+                <Button
+                  fullWidth
+                  mt="sm"
+                  size="md"
+                  type="submit"
+                  loading={loading}
+                  color="indigo"
+                  radius={0}
+                  style={{
+                    fontFamily: "var(--font-jetbrains-mono)",
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
+                    border: "2px solid transparent",
+                  }}
+                >
+                  Initiate Session
+                </Button>
+              </Stack>
+            </form>
+          </Paper>
+        </Container>
+      </Box>
+    </div>
   );
 }
